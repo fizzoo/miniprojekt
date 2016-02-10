@@ -60,4 +60,4 @@ while True:
     client.idle() #Waits for song change/other
     albumart = get_albumart(get_song())
     if albumart is not None:
-        call(["feh", "--bg-max", albumart])
+        call(["feh", "--bg-max", "--no-fehbg", albumart])
