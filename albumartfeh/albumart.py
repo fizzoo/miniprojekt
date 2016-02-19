@@ -21,9 +21,11 @@
 from subprocess import call
 import mpd, sys
 import glob, re
+import signal
 
 # Required variables
 MUSICDIR = "/home/fizzo/musik/"
+RESETSCRIPT = "/home/fizzo/.fehbg"
 PATTERN = "front.*"
 
 
@@ -43,7 +45,10 @@ def get_song():
     else:
         return(client.currentsong())
 
-
+# Signal handler that resets bg
+def term_handler(signal, frame):
+    call(RESETSCRIPT)
+    sys.exit(0)
 
 
 
@@ -55,9 +60,14 @@ except(mpd.ConnectionError):
     print("Could not connect to MPD. Exiting.")
     sys.exit(1)
 
+# Register signal handler
+signal.signal(signal.SIGTERM, term_handler)
+
 # Monitors mpd for changes and if so, changes image
 while True:
     client.idle() #Waits for song change/other
     albumart = get_albumart(get_song())
     if albumart is not None:
         call(["feh", "--bg-max", "--no-fehbg", albumart])
+    else:
+        call(RESETSCRIPT)
