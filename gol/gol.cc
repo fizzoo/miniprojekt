@@ -490,6 +490,26 @@ struct GLstate {
     }
 };
 
+std::vector<double_xy> line(int x0, int y0, int x1, int y1){
+    std::vector<double_xy> ret;
+
+    int dx = abs(x1-x0);
+    int dy = abs(y1-y0);
+    int sx = x0<x1 ? 1 : -1;
+    int sy = y0<y1 ? 1 : -1;
+    int err = (dx>dy ? dx : -dy)/2;
+    int err2;
+
+    while(true){
+        ret.emplace_back(x0,y0);
+        if (x0==x1 && y0==y1) break;
+        err2 = err;
+        if (err2 >-dx) { err -= dy; x0 += sx; }
+        if (err2 < dy) { err += dx; y0 += sy; }
+    }
+
+    return ret;
+}
 
 int main(int argc, const char* argv[]){
     {
@@ -515,6 +535,7 @@ int main(int argc, const char* argv[]){
     Uint32 lastframe = SDL_GetTicks();
     Uint32 towait = 0;
     bool active = 1;
+    int lastx = 0, lasty = 0;
     bool lbdown = 0;
     bool rbdown = 0;
     SDL_Event event;
@@ -583,14 +604,16 @@ int main(int argc, const char* argv[]){
                     }
                     break;
                 case SDL_MOUSEBUTTONDOWN:
+                    lastx = event.button.x;
+                    lasty = event.button.y;
                     switch (event.button.button) {
                         case SDL_BUTTON_LEFT:
-                            global_b.letlive_scaled(double_xy(event.button.x, event.button.y), state.loc);
+                            global_b.letlive_scaled(double_xy(lastx, lasty), state.loc);
                             if (!active){state.draw();}
                             lbdown = 1;
                             break;
                         case SDL_BUTTON_RIGHT:
-                            global_b.letdie_scaled(double_xy(event.button.x, event.button.y), state.loc);
+                            global_b.letdie_scaled(double_xy(lastx, lasty), state.loc);
                             if (!active){state.draw();}
                             rbdown = 1;
                             break;
@@ -607,12 +630,20 @@ int main(int argc, const char* argv[]){
                     }
                     break;
                 case SDL_MOUSEMOTION:
-                    if (lbdown){
-                        global_b.letlive_scaled(double_xy(event.motion.x, event.motion.y), state.loc);
-                        if (!active){state.draw();}
-                    }
-                    if (rbdown){
-                        global_b.letdie_scaled(double_xy(event.motion.x, event.motion.y), state.loc);
+                    if (lbdown || rbdown){
+                        int currx = event.motion.x;
+                        int curry = event.motion.y;
+                        auto xys = line(lastx, lasty, currx, curry);
+                        lastx = currx;
+                        lasty = curry;
+
+                        for (double_xy xy : xys) {
+                            if (lbdown) {
+                                global_b.letlive_scaled(std::move(xy), state.loc);
+                            } else if (rbdown) {
+                                global_b.letdie_scaled(std::move(xy), state.loc);
+                            }
+                        }
                         if (!active){state.draw();}
                     }
                     break;
