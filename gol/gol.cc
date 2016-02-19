@@ -333,7 +333,6 @@ struct GLstate {
         loc.center_xy_on_xy(before, after);
 
         setVertMatrix();
-        draw();
     }
 
     void zoomout(double x, double y){
@@ -347,7 +346,6 @@ struct GLstate {
         loc.center_xy_on_xy(before, after);
 
         setVertMatrix();
-        draw();
     }
 
     void setVertMatrix(){
@@ -550,11 +548,7 @@ int main(int argc, const char* argv[]){
                         case SDLK_ESCAPE:
                             return 0;
                         case SDLK_SPACE:
-                            if (active) {
-                                active = 0;
-                            } else {
-                                active = 1;
-                            }
+                            active = !active;
                             break;
                         case SDLK_i:
                             if (FPSMAX > 1 && FPSMAX <= 10){
@@ -574,11 +568,9 @@ int main(int argc, const char* argv[]){
                             for (auto& i : global_b.aliveactive){
                                 i = 0;
                             }
-                            if (!active){state.draw();}
                             break;
                         case SDLK_r:
                             global_b.loaddefaults();
-                            if (!active){state.draw();}
                             break;
                         case SDLK_f:
                             for (int y = 0; y < SIZEY; y++){
@@ -593,11 +585,9 @@ int main(int argc, const char* argv[]){
                             break;
                         case SDLK_l:
                             global_b.load();
-                            if (!active){state.draw();}
                             break;
                         case SDLK_PERIOD:
                             global_b.run();
-                            state.draw();
                             break;
 
 
@@ -609,12 +599,10 @@ int main(int argc, const char* argv[]){
                     switch (event.button.button) {
                         case SDL_BUTTON_LEFT:
                             global_b.letlive_scaled(double_xy(lastx, lasty), state.loc);
-                            if (!active){state.draw();}
                             lbdown = 1;
                             break;
                         case SDL_BUTTON_RIGHT:
                             global_b.letdie_scaled(double_xy(lastx, lasty), state.loc);
-                            if (!active){state.draw();}
                             rbdown = 1;
                             break;
                     }
@@ -644,7 +632,6 @@ int main(int argc, const char* argv[]){
                                 global_b.letdie_scaled(std::move(xy), state.loc);
                             }
                         }
-                        if (!active){state.draw();}
                     }
                     break;
                 case SDL_MOUSEWHEEL:
@@ -661,24 +648,24 @@ int main(int argc, const char* argv[]){
             }
         }
 
-        if (active || !(lbdown || rbdown)) { //FPS
-            towait = SDL_GetTicks();  //nu väsentligen currframe
-            lastframe += 1000/FPSMAX; //nu väsentligen nextframe
-            if (lastframe > towait){
-                towait = lastframe - towait;
-            } else {
-                towait = 0;
-            }
-            lastframe = SDL_GetTicks();
-            if (towait) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(towait));
-            }
+        //FPS, or rather wait so it is not too fast
+        towait = SDL_GetTicks();  //nu väsentligen currframe
+        lastframe += 1000/FPSMAX; //nu väsentligen nextframe
+        if (lastframe > towait){
+            towait = lastframe - towait;
+        } else {
+            towait = 0;
+        }
+        lastframe = SDL_GetTicks();
+        if (towait) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(towait));
         }
 
-        if (active) { //Draw
-            global_b.run();
-            state.draw();
-        }
+        //run an update cycle if active
+        if (active) global_b.run();
+
+        //draw always
+        state.draw();
     }
 
 
