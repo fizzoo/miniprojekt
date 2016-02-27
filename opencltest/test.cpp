@@ -54,18 +54,12 @@ int main(){
         checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
 
         //Print info about all available platforms
-        for (cl::Platform &platform : platformList) {
-            std::string res;
-            platform.getInfo((cl_platform_info)CL_PLATFORM_VENDOR,      &res);
-            std::cerr << "Platform: " << res << "\n";
-            platform.getInfo((cl_platform_info)CL_PLATFORM_PROFILE,     &res);
-            std::cerr << "Profile: " << res << "\n";
-            platform.getInfo((cl_platform_info)CL_PLATFORM_VERSION,     &res);
-            std::cerr << "Version: " << res << "\n";
-            platform.getInfo((cl_platform_info)CL_PLATFORM_NAME,        &res);
-            std::cerr << "Name: " << res << "\n";
-            platform.getInfo((cl_platform_info)CL_PLATFORM_EXTENSIONS,  &res);
-            std::cerr << "Extensions: " << res << "\n";
+        for (cl::Platform &p : platformList) {
+            std::cerr << "Platform: " << p.getInfo<CL_PLATFORM_VENDOR>() << "\n";
+            std::cerr << "Profile: " << p.getInfo<CL_PLATFORM_PROFILE>() << "\n";
+            std::cerr << "Version: " << p.getInfo<CL_PLATFORM_VERSION>() << "\n";
+            std::cerr << "Name: " << p.getInfo<CL_PLATFORM_NAME>()<< "\n";
+            std::cerr << "Extensions: " << p.getInfo<CL_PLATFORM_EXTENSIONS>()<< "\n";
             std::cerr << std::endl;
         }
     }
@@ -89,19 +83,11 @@ int main(){
 
     //Print info about all available devices
     for (cl::Device &dev : devices) {
-        std::string s;
-        cl_uint i;
-        cl_ulong l;
-        dev.getInfo((cl_platform_info)CL_DEVICE_NAME, &s);
-        std::cerr << "Name: " << s << "\n";
-        dev.getInfo((cl_platform_info)CL_DEVICE_MAX_CLOCK_FREQUENCY, &i);
-        std::cerr << "Clock freq: " << i << "\n";
-        dev.getInfo((cl_platform_info)CL_DEVICE_GLOBAL_MEM_SIZE, &l);
-        std::cerr << "global mem: " << l << "\n";
-        dev.getInfo((cl_platform_info)CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &l);
-        std::cerr << "global mem cache: " << l << "\n";
-        dev.getInfo((cl_platform_info)CL_DEVICE_LOCAL_MEM_SIZE, &l);
-        std::cerr << "local mem: " << l << "\n";
+        std::cerr << "Name: " << dev.getInfo<CL_DEVICE_NAME>() << "\n";
+        std::cerr << "Clock freq: " << dev.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << "\n";
+        std::cerr << "global mem: " << dev.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() << "\n";
+        std::cerr << "global mem cache: " << dev.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>() << "\n";
+        std::cerr << "local mem: " << dev.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() << "\n";
         std::cerr << std::endl;
     }
 
