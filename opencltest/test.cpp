@@ -11,7 +11,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <iterator>
 
 
@@ -81,11 +80,11 @@ int main(){
     //Load kernel source
     std::ifstream file("kernel.cl");
     checkErr(file.is_open() ? CL_SUCCESS:-1, "kernel.cl");
-    std::ostringstream prog;
-    prog << file.rdbuf();
+    std::string prog {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()}; //function declaration if no {}
+
 
     //Create program
-    cl::Program::Sources source(1, std::make_pair(prog.str().c_str(), prog.str().length()+1));
+    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
     cl::Program program(context, source);
     err = program.build(devices,""); //build on all devices?
     checkBuildErr(err, &devices[0], &program);
