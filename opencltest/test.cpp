@@ -48,21 +48,21 @@ int main(){
     err = cl::Platform::get(&platformList);
     checkErr(err, "cl::Platform::get");
     checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
-    std::cerr << "Number of platforms are: " << platformList.size() << "\n\n";
 
     //Print info about all available platforms
     for (cl::Platform &platform : platformList) {
-        std::string a,b,c,d,e;
-        platform.getInfo((cl_platform_info)CL_PLATFORM_VENDOR,      &a);
-        platform.getInfo((cl_platform_info)CL_PLATFORM_PROFILE,     &b);
-        platform.getInfo((cl_platform_info)CL_PLATFORM_VERSION,     &c);
-        platform.getInfo((cl_platform_info)CL_PLATFORM_NAME,        &d);
-        platform.getInfo((cl_platform_info)CL_PLATFORM_EXTENSIONS,  &e);
-        std::cerr << "Platform: " << a << "\n";
-        std::cerr << "Profile: " << b << "\n";
-        std::cerr << "Version: " << c << "\n";
-        std::cerr << "Name: " << d << "\n";
-        std::cerr << "Extensions: " << e << "\n\n";
+        std::string res;
+        platform.getInfo((cl_platform_info)CL_PLATFORM_VENDOR,      &res);
+        std::cerr << "Platform: " << res << "\n";
+        platform.getInfo((cl_platform_info)CL_PLATFORM_PROFILE,     &res);
+        std::cerr << "Profile: " << res << "\n";
+        platform.getInfo((cl_platform_info)CL_PLATFORM_VERSION,     &res);
+        std::cerr << "Version: " << res << "\n";
+        platform.getInfo((cl_platform_info)CL_PLATFORM_NAME,        &res);
+        std::cerr << "Name: " << res << "\n";
+        platform.getInfo((cl_platform_info)CL_PLATFORM_EXTENSIONS,  &res);
+        std::cerr << "Extensions: " << res << "\n";
+        std::cerr << std::endl;
     }
     cl::Platform& nvidiacl = platformList[0]; //TODO: Somehow select correctly if multiple available.
 
@@ -81,10 +81,29 @@ int main(){
     devices = context.getInfo<CL_CONTEXT_DEVICES>();
     checkErr(devices.size() > 0 ? CL_SUCCESS : -1, "devices.size() > 0");
 
+
+    //Print info about all available devices
+    for (cl::Device &dev : devices) {
+        std::string s;
+        cl_uint i;
+        cl_ulong l;
+        dev.getInfo((cl_platform_info)CL_DEVICE_NAME, &s);
+        std::cerr << "Name: " << s << "\n";
+        dev.getInfo((cl_platform_info)CL_DEVICE_MAX_CLOCK_FREQUENCY, &i);
+        std::cerr << "Clock freq: " << i << "\n";
+        dev.getInfo((cl_platform_info)CL_DEVICE_GLOBAL_MEM_SIZE, &l);
+        std::cerr << "global mem: " << l << "\n";
+        dev.getInfo((cl_platform_info)CL_DEVICE_GLOBAL_MEM_CACHE_SIZE, &l);
+        std::cerr << "global mem cache: " << l << "\n";
+        dev.getInfo((cl_platform_info)CL_DEVICE_LOCAL_MEM_SIZE, &l);
+        std::cerr << "local mem: " << l << "\n";
+        std::cerr << std::endl;
+    }
+
     //Load kernel source
     std::ifstream file("kernel.cl");
     checkErr(file.is_open() ? CL_SUCCESS:-1, "kernel.cl");
-    std::string prog {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()}; //function declaration if no {}
+    std::string prog {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()}; //function declaration if no brackets
 
     //Create program
     cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
