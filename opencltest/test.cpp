@@ -70,8 +70,8 @@ int main(){
         }
     }
 
-    //Create the context. Grabs the first and best available GPU, from
-    //whatever platform, and creates a context from that.
+    //Create the context. Iterates through the platforms and picks the first
+    //one with a GPU, then creates a context from that.
     cl::Context context(CL_DEVICE_TYPE_GPU, NULL, NULL, NULL, &err);
     checkErr(err, "Context::Context()");
 
