@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <iterator>
 
 
@@ -22,6 +23,16 @@ const std::string hw("Hello World\n");
 inline void checkErr(cl_int err, const char * name) {
     if (err != CL_SUCCESS) {
         std::cerr << "ERROR: " << name  << " (" << err << ")" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p){
+    if (err != CL_SUCCESS) {
+        std::cerr << "ERROR: Building OpenCL program failed!\n";
+        std::string log;
+        p->getBuildInfo(*d, (cl_program_build_info)CL_PROGRAM_BUILD_LOG, &log);
+        std::cerr << log << std::endl;
         exit(EXIT_FAILURE);
     }
 }
@@ -66,4 +77,39 @@ int main(){
     std::vector<cl::Device> devices;
     devices = context.getInfo<CL_CONTEXT_DEVICES>();
     checkErr(devices.size() > 0 ? CL_SUCCESS : -1, "devices.size() > 0");
+
+    //Load kernel source
+    std::ifstream file("kernel.cl");
+    checkErr(file.is_open() ? CL_SUCCESS:-1, "kernel.cl");
+    std::ostringstream prog;
+    prog << file.rdbuf();
+
+    //Create program
+    cl::Program::Sources source(1, std::make_pair(prog.str().c_str(), prog.str().length()+1));
+    cl::Program program(context, source);
+    err = program.build(devices,""); //build on all devices?
+    checkBuildErr(err, &devices[0], &program);
+
+    //Create kernel
+    cl::Kernel kernel(program, "hello", &err);
+    checkErr(err, "Kernel::Kernel()");
+    err = kernel.setArg(0, outCL);
+    checkErr(err, "Kernel::setArg()");
+
+    //Queue kernel
+    cl::CommandQueue queue(context, devices[0], 0, &err);
+    checkErr(err, "CommandQueue::CommandQueue()");
+    cl::Event event;
+    err = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(hw.length()+1), cl::NDRange(1, 1), NULL, &event);
+    checkErr(err, "ComamndQueue::enqueueNDRangeKernel()");
+
+    //Queue reading result
+    event.wait();
+    err = queue.enqueueReadBuffer(outCL, CL_TRUE, 0, hw.length()+1, outH);
+    checkErr(err, "ComamndQueue::enqueueReadBuffer()");
+    std::cout << outH;
+    return EXIT_SUCCESS;
+
+    //Cleanup maybe
+    delete outH;
 }
