@@ -43,37 +43,42 @@ void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p){
 int main(){
     cl_int err;
 
-    //Get platforms available
-    std::vector<cl::Platform> platformList;
-    err = cl::Platform::get(&platformList);
-    checkErr(err, "cl::Platform::get");
-    checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
+    //Since we can't specify which platform we actually want (in this program,
+    //no interaction), this won't help with the helloworld. However, print the
+    //information.
+    {
+        //Get platforms available
+        std::vector<cl::Platform> platformList;
+        err = cl::Platform::get(&platformList);
+        checkErr(err, "cl::Platform::get");
+        checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
 
-    //Print info about all available platforms
-    for (cl::Platform &platform : platformList) {
-        std::string res;
-        platform.getInfo((cl_platform_info)CL_PLATFORM_VENDOR,      &res);
-        std::cerr << "Platform: " << res << "\n";
-        platform.getInfo((cl_platform_info)CL_PLATFORM_PROFILE,     &res);
-        std::cerr << "Profile: " << res << "\n";
-        platform.getInfo((cl_platform_info)CL_PLATFORM_VERSION,     &res);
-        std::cerr << "Version: " << res << "\n";
-        platform.getInfo((cl_platform_info)CL_PLATFORM_NAME,        &res);
-        std::cerr << "Name: " << res << "\n";
-        platform.getInfo((cl_platform_info)CL_PLATFORM_EXTENSIONS,  &res);
-        std::cerr << "Extensions: " << res << "\n";
-        std::cerr << std::endl;
+        //Print info about all available platforms
+        for (cl::Platform &platform : platformList) {
+            std::string res;
+            platform.getInfo((cl_platform_info)CL_PLATFORM_VENDOR,      &res);
+            std::cerr << "Platform: " << res << "\n";
+            platform.getInfo((cl_platform_info)CL_PLATFORM_PROFILE,     &res);
+            std::cerr << "Profile: " << res << "\n";
+            platform.getInfo((cl_platform_info)CL_PLATFORM_VERSION,     &res);
+            std::cerr << "Version: " << res << "\n";
+            platform.getInfo((cl_platform_info)CL_PLATFORM_NAME,        &res);
+            std::cerr << "Name: " << res << "\n";
+            platform.getInfo((cl_platform_info)CL_PLATFORM_EXTENSIONS,  &res);
+            std::cerr << "Extensions: " << res << "\n";
+            std::cerr << std::endl;
+        }
     }
-    cl::Platform& nvidiacl = platformList[0]; //TODO: Somehow select correctly if multiple available.
 
-    //Create the context
-    cl_context_properties cprops[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)(nvidiacl)(), 0};
-    cl::Context context(CL_DEVICE_TYPE_GPU, cprops, NULL, NULL, &err);
+    //Create the context. Grabs the first and best available GPU, from
+    //whatever platform, and creates a context from that.
+    cl::Context context(CL_DEVICE_TYPE_GPU, NULL, NULL, NULL, &err);
     checkErr(err, "Context::Context()");
 
     //Create a buffer for storing the result
     char * outH = new char[RESULTLENGTH];
-    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, RESULTLENGTH, outH, &err);
+    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
+            RESULTLENGTH, outH, &err);
     checkErr(err, "Buffer::Buffer()");
 
     //Get device
@@ -103,12 +108,14 @@ int main(){
     //Load kernel source
     std::ifstream file("kernel.cl");
     checkErr(file.is_open() ? CL_SUCCESS:-1, "kernel.cl");
-    std::string prog {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()}; //function declaration if no brackets
+    std::string prog {
+        std::istreambuf_iterator<char>(file),
+        std::istreambuf_iterator<char>()};
 
     //Create program
     cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
     cl::Program program(context, source);
-    err = program.build(devices,""); //build on all devices?
+    err = program.build(devices,"");
     checkBuildErr(err, &devices[0], &program);
 
     //Create kernel
