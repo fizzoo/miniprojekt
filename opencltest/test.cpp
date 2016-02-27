@@ -27,11 +27,13 @@ inline void checkErr(cl_int err, const char * name) {
 }
 
 int main(){
-    //Get platforms available
     cl_int err;
+
+    //Get platforms available
     std::vector< cl::Platform > platformList;
-    cl::Platform::get(&platformList);
-    checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "cl::Platform::get");
+    err = cl::Platform::get(&platformList);
+    checkErr(err, "cl::Platform::get");
+    checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
     std::cerr << "Number of platforms are: " << platformList.size() << "\n\n";
 
     //Print info about all available platforms
