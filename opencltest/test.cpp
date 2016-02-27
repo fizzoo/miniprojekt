@@ -27,15 +27,30 @@ inline void checkErr(cl_int err, const char * name) {
 }
 
 int main(){
+    //Get platforms available
     cl_int err;
     std::vector< cl::Platform > platformList;
     cl::Platform::get(&platformList);
     checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "cl::Platform::get");
-    std::cerr << "Platform number is: " << platformList.size() << std::endl;std::string platformVendor;
-    platformList[0].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
-    std::cerr << "Platform is by: " << platformVendor << "\n";
+    std::cerr << "Number of platforms are: " << platformList.size() << "\n\n";
 
-    cl_context_properties cprops[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)(platformList[0])(), 0};
+    //Print info about all available platforms
+    for (cl::Platform &platform : platformList) {
+        std::string a,b,c,d,e;
+        platform.getInfo((cl_platform_info)CL_PLATFORM_VENDOR,      &a);
+        platform.getInfo((cl_platform_info)CL_PLATFORM_PROFILE,     &b);
+        platform.getInfo((cl_platform_info)CL_PLATFORM_VERSION,     &c);
+        platform.getInfo((cl_platform_info)CL_PLATFORM_NAME,        &d);
+        platform.getInfo((cl_platform_info)CL_PLATFORM_EXTENSIONS,  &e);
+        std::cerr << "Platform: " << a << "\n";
+        std::cerr << "Profile: " << b << "\n";
+        std::cerr << "Version: " << c << "\n";
+        std::cerr << "Name: " << d << "\n";
+        std::cerr << "Extensions: " << e << "\n\n";
+    }
+    cl::Platform& gpu = platformList[0]; //TODO: Somehow select the gpu if multiple available.
+
+    cl_context_properties cprops[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)(gpu)(), 0};
     cl::Context context(CL_DEVICE_TYPE_GPU, cprops, NULL, NULL, &err);
-    checkErr(err, "Context::Context()"); 
+    checkErr(err, "Context::Context()");
 }
