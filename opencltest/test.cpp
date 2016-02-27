@@ -13,8 +13,9 @@
 #include <string>
 #include <iterator>
 
-
-const std::string hw("Hello World\n");
+namespace {
+    const size_t RESULTLENGTH = 20;
+}
 
 /**
  * Exit if it is an error. Note down name of erring function.
@@ -26,6 +27,9 @@ inline void checkErr(cl_int err, const char * name) {
     }
 }
 
+/**
+ * If build fails, print the compilation output and exit.
+ */
 void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p){
     if (err != CL_SUCCESS) {
         std::cerr << "ERROR: Building OpenCL program failed!\n";
@@ -68,8 +72,8 @@ int main(){
     checkErr(err, "Context::Context()");
 
     //Create a buffer for storing the result
-    char * outH = new char[hw.length()+1];
-    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, hw.length()+1, outH, &err);
+    char * outH = new char[RESULTLENGTH];
+    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, RESULTLENGTH, outH, &err);
     checkErr(err, "Buffer::Buffer()");
 
     //Get device
@@ -81,7 +85,6 @@ int main(){
     std::ifstream file("kernel.cl");
     checkErr(file.is_open() ? CL_SUCCESS:-1, "kernel.cl");
     std::string prog {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()}; //function declaration if no {}
-
 
     //Create program
     cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
@@ -99,12 +102,12 @@ int main(){
     cl::CommandQueue queue(context, devices[0], 0, &err);
     checkErr(err, "CommandQueue::CommandQueue()");
     cl::Event event;
-    err = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(hw.length()+1), cl::NDRange(1, 1), NULL, &event);
+    err = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(RESULTLENGTH), cl::NDRange(1, 1), NULL, &event);
     checkErr(err, "ComamndQueue::enqueueNDRangeKernel()");
 
     //Queue reading result
     event.wait();
-    err = queue.enqueueReadBuffer(outCL, CL_TRUE, 0, hw.length()+1, outH);
+    err = queue.enqueueReadBuffer(outCL, CL_TRUE, 0, RESULTLENGTH, outH);
     checkErr(err, "ComamndQueue::enqueueReadBuffer()");
     std::cout << outH;
     return EXIT_SUCCESS;
