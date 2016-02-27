@@ -30,7 +30,7 @@ int main(){
     cl_int err;
 
     //Get platforms available
-    std::vector< cl::Platform > platformList;
+    std::vector<cl::Platform> platformList;
     err = cl::Platform::get(&platformList);
     checkErr(err, "cl::Platform::get");
     checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
@@ -50,9 +50,20 @@ int main(){
         std::cerr << "Name: " << d << "\n";
         std::cerr << "Extensions: " << e << "\n\n";
     }
-    cl::Platform& gpu = platformList[0]; //TODO: Somehow select the gpu if multiple available.
+    cl::Platform& nvidiacl = platformList[0]; //TODO: Somehow select correctly if multiple available.
 
-    cl_context_properties cprops[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)(gpu)(), 0};
+    //Create the context
+    cl_context_properties cprops[3] = {CL_CONTEXT_PLATFORM, (cl_context_properties)(nvidiacl)(), 0};
     cl::Context context(CL_DEVICE_TYPE_GPU, cprops, NULL, NULL, &err);
     checkErr(err, "Context::Context()");
+
+    //Create a buffer for storing the result
+    char * outH = new char[hw.length()+1];
+    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR, hw.length()+1, outH, &err);
+    checkErr(err, "Buffer::Buffer()");
+
+    //Get device
+    std::vector<cl::Device> devices;
+    devices = context.getInfo<CL_CONTEXT_DEVICES>();
+    checkErr(devices.size() > 0 ? CL_SUCCESS : -1, "devices.size() > 0");
 }
