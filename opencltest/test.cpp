@@ -40,8 +40,6 @@ void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p){
 }
 
 int main(){
-    std::cout << CL_SUCCESS;
-
     cl_int err;
 
     //Since we can't specify which platform we actually want (in this program,
