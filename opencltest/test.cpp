@@ -17,13 +17,15 @@ namespace {
     const size_t RESULTLENGTH = 20;
 }
 
+#define CHECK(err) checkErr(err, __FILE__, __LINE__, __func__)
+
 /**
  * Exit if it is an error. Note down name of erring function.
  */
-inline void checkErr(cl_int err, const char * name) {
+inline void checkErr(cl_int err, const char *file, int line, const char *func) {
     if (err != CL_SUCCESS) {
-        std::cerr << "ERROR: " << name  << " (" << err << ")" << std::endl;
-        exit(EXIT_FAILURE);
+        std::cerr << "UNEXPECTED ERROR " << err  << " at " << file << ":" << line << " in function " << func << std::endl;
+        exit(-1);
     }
 }
 
@@ -36,7 +38,7 @@ void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p){
         std::string log;
         p->getBuildInfo(*d, (cl_program_build_info)CL_PROGRAM_BUILD_LOG, &log);
         std::cerr << log << std::endl;
-        exit(EXIT_FAILURE);
+        exit(-2);
     }
 }
 
@@ -50,8 +52,11 @@ int main(){
         //Get platforms available
         std::vector<cl::Platform> platformList;
         err = cl::Platform::get(&platformList);
-        checkErr(err, "cl::Platform::get");
-        checkErr(platformList.size()!=0 ? CL_SUCCESS : -1, "found no platforms");
+        CHECK(err);
+        if (platformList.size() == 0) {
+            std::cerr << "Found no platforms" << std::endl;
+            exit(-1);
+        }
 
         //Print info about all available platforms
         for (cl::Platform &p : platformList) {
@@ -67,19 +72,15 @@ int main(){
     //Create the context. Iterates through the platforms and picks the first
     //one with a GPU, then creates a context from that.
     cl::Context context(CL_DEVICE_TYPE_GPU, NULL, NULL, NULL, &err);
-    checkErr(err, "Context::Context()");
-
-    //Create a buffer for storing the result
-    char * outH = new char[RESULTLENGTH];
-    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
-            RESULTLENGTH, outH, &err);
-    checkErr(err, "Buffer::Buffer()");
+    CHECK(err);
 
     //Get device
     std::vector<cl::Device> devices;
     devices = context.getInfo<CL_CONTEXT_DEVICES>();
-    checkErr(devices.size() > 0 ? CL_SUCCESS : -1, "devices.size() > 0");
-
+    if (devices.size() == 0) {
+        std::cerr << "Found no devices" << std::endl;
+        exit(-1);
+    }
 
     //Print info about all available devices
     for (cl::Device &dev : devices) {
@@ -91,12 +92,22 @@ int main(){
         std::cerr << std::endl;
     }
 
+    //Create a buffer for storing the result
+    char * outH = new char[RESULTLENGTH];
+    cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
+            RESULTLENGTH, outH, &err);
+    CHECK(err);
+
+
     //Load kernel source
     std::ifstream file("kernel.cl");
-    checkErr(file.is_open() ? CL_SUCCESS:-1, "kernel.cl");
+    if (!file) {
+        std::cerr << "Kernel source file not opened correctly" << std::endl;
+        exit(-1);
+    }
     std::string prog {
         std::istreambuf_iterator<char>(file),
-        std::istreambuf_iterator<char>()};
+            std::istreambuf_iterator<char>()};
 
     //Create program
     cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
@@ -106,21 +117,21 @@ int main(){
 
     //Create kernel
     cl::Kernel kernel(program, "hello", &err);
-    checkErr(err, "Kernel::Kernel()");
+    CHECK(err);
     err = kernel.setArg(0, outCL);
-    checkErr(err, "Kernel::setArg()");
+    CHECK(err);
 
     //Queue kernel
     cl::CommandQueue queue(context, devices[0], 0, &err);
-    checkErr(err, "CommandQueue::CommandQueue()");
+    CHECK(err);
     cl::Event event;
     err = queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(RESULTLENGTH), cl::NDRange(1, 1), NULL, &event);
-    checkErr(err, "ComamndQueue::enqueueNDRangeKernel()");
+    CHECK(err);
 
     //Queue reading result
     event.wait();
     err = queue.enqueueReadBuffer(outCL, CL_TRUE, 0, RESULTLENGTH, outH);
-    checkErr(err, "ComamndQueue::enqueueReadBuffer()");
+    CHECK(err);
     std::cout << outH;
     return EXIT_SUCCESS;
 
