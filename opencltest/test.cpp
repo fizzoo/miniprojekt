@@ -17,17 +17,14 @@ namespace {
     const size_t RESULTLENGTH = 20;
 }
 
-#define CHECK(err) checkErr(err, __FILE__, __LINE__, __func__)
-
 /**
- * Exit if it is an error. Note down name of erring function.
+ * Checks that err is 0, otherwise exits with debug information. Since this is
+ * the lazy solution where we don't check which error we got, CL_SUCCESS
+ * wouldn't give any extra information. Should be 0 anyway, and this is usable
+ * without a definition of that aswell. If you ever see this output, you should
+ * probably put in actual checks in the relevant location.
  */
-inline void checkErr(cl_int err, const char *file, int line, const char *func) {
-    if (err != CL_SUCCESS) {
-        std::cerr << "UNEXPECTED ERROR " << err  << " at " << file << ":" << line << " in function " << func << std::endl;
-        exit(-1);
-    }
-}
+#define CHECK(err) if (err) {std::cerr << "UNEXPECTED ERROR " << err  << " at " << __FILE__ << ":" << __LINE__ << " in function " << __func__ << std::endl; exit(-1);}
 
 /**
  * If build fails, print the compilation output and exit.
@@ -43,6 +40,8 @@ void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p){
 }
 
 int main(){
+    std::cout << CL_SUCCESS;
+
     cl_int err;
 
     //Since we can't specify which platform we actually want (in this program,
