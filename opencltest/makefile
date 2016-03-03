@@ -1,4 +1,4 @@
-CXXFLAGS=-Wall -Wextra -pedantic -std=c++14
-LDLIBS=-lOpenCL
+CXXFLAGS=-Wall -Wextra -pedantic -std=c++14 -g -Og
+LDLIBS=-lOpenCL -lpng
 
-test:
+test: imloader.cc
