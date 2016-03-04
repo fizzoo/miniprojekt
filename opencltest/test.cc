@@ -76,6 +76,10 @@ int main() {
   // Create the context. Iterates through the platforms and picks the first
   // one with a GPU, then creates a context from that.
   cl::Context context(CL_DEVICE_TYPE_GPU, NULL, NULL, NULL, &err);
+  if (err) {
+    //Fall back to CPU
+    context = cl::Context(CL_DEVICE_TYPE_CPU, NULL, NULL, NULL, &err);
+  }
   CHECK(err);
 
   // Get device
@@ -83,7 +87,6 @@ int main() {
   devices = context.getInfo<CL_CONTEXT_DEVICES>();
   if (devices.size() == 0) {
     std::cerr << "Found no devices" << std::endl;
-    exit(-1);
   }
 
   // Print info about all available devices
