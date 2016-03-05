@@ -27,7 +27,12 @@ Image::Image(std::string filename) {
   if (!pngi)
     FAIL("Couldn't create info struct");
 
+  png_read_info(pngp, pngi);
+
   auto image_height = height();
+  if (image_height <= 0) {
+    FAIL("Found no image data, zero height");
+  }
 
   int rowbytes = png_get_rowbytes(pngp, pngi);
   unsigned char **row_pointers = new unsigned char *[image_height];
@@ -50,11 +55,6 @@ Image::Image(std::string filename) {
   png_read_image(pngp, row_pointers);
 
   delete row_pointers;
-
-  if (height() <= 0)
-    FAIL("height error");
-  if (width() <= 0)
-    FAIL("width error");
 }
 
 size_t Image::height() { return png_get_image_height(pngp, pngi); }
