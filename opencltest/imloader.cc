@@ -18,15 +18,24 @@ Image::Image(std::string filename) {
   if (!fp)
     FAIL("Couldn't open image file.");
 
-  pngp =
-      png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+  // Test for png.
+  unsigned char header[8];
+  fread(header, 1, 8, fp);
+  bool is_png = !png_sig_cmp(header, 0, 8);
+  if (!is_png)
+    FAIL("Not a png");
+
+  pngp = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
   if (!pngp)
     FAIL("Couldn't create png struct");
+
+  png_set_sig_bytes(pngp, 8);
 
   pngi = png_create_info_struct(pngp);
   if (!pngi)
     FAIL("Couldn't create info struct");
 
+  png_init_io(pngp, fp);
   png_read_info(pngp, pngi);
 
   auto image_height = height();
