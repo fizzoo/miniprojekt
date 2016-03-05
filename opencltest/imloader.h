@@ -12,14 +12,26 @@ private:
   bool ok;
   png_structp pngp;
   png_infop pngi;
-  unsigned char *_data;
 
 public:
+  /**
+   * Free access. Don't use anything beyond width*height*4 (All images expanded
+   * to RGBA 8bit).
+   */
+  unsigned char *data;
+
+  /**
+   * Loads image, allocates data and initializes everything.
+   * Check if ok before using by a bool conversion.
+   */
   Image(std::string filename);
+
+  /**
+   * Deallocates data, pngp and pngi.
+   */
   ~Image();
 
-  unsigned char *data() { return _data; }
-  void writepng(std::string filename, char *buffer);
+  void writepng(std::string filename);
 
   size_t height();
   size_t width();

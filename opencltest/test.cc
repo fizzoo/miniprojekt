@@ -116,7 +116,7 @@ int main() {
   }
   cl::Image2D cl_img(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
               {CL_RGBA, CL_UNSIGNED_INT8}, img.width(), img.height(), 0,
-              img.data(), &err);
+              img.data, &err);
   if (err) {
     switch (err) {
       case CL_INVALID_CONTEXT: std::cerr << "CL_INVALID_CONTEXT" << std::endl; break;
