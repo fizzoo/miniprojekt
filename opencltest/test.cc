@@ -14,10 +14,6 @@
 #include <iterator>
 #include "imloader.h"
 
-namespace {
-const size_t RESULTLENGTH = 21;
-}
-
 /**
  * Checks that err is 0, otherwise exits with debug information. Since this is
  * the lazy solution where we don't check which error we got, CL_SUCCESS
@@ -77,7 +73,7 @@ int main() {
   // one with a GPU, then creates a context from that.
   cl::Context context(CL_DEVICE_TYPE_GPU, NULL, NULL, NULL, &err);
   if (err) {
-    //Fall back to CPU
+    // Fall back to CPU
     context = cl::Context(CL_DEVICE_TYPE_CPU, NULL, NULL, NULL, &err);
   }
   CHECK(err);
@@ -103,32 +99,44 @@ int main() {
     std::cerr << std::endl;
   }
 
-  // Create a buffer for storing the result
-  char *outH = new char[RESULTLENGTH]();
-  cl::Buffer outCL(context, CL_MEM_WRITE_ONLY | CL_MEM_USE_HOST_PTR,
-                   RESULTLENGTH, outH, &err);
-  CHECK(err);
-
   iml::Image img("foo.png");
   if (!img) {
     std::cerr << "Image loaded incorrectly" << std::endl;
     exit(-1);
   }
-  cl::Image2D cl_img(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-              {CL_RGBA, CL_UNSIGNED_INT8}, img.width(), img.height(), 0,
-              img.data, &err);
+  cl::Image2D img_in(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                     {CL_RGBA, CL_UNSIGNED_INT8}, img.width(), img.height(), 0,
+                     img.data, &err);
   if (err) {
     switch (err) {
-      case CL_INVALID_CONTEXT: std::cerr << "CL_INVALID_CONTEXT" << std::endl; break;
-      case CL_INVALID_VALUE: std::cerr << "CL_INVALID_VALUE" << std::endl; break;
-      case CL_INVALID_IMAGE_SIZE: std::cerr << "CL_INVALID_IMAGE_SIZE" << std::endl; break;
-      case CL_INVALID_HOST_PTR: std::cerr << "CL_INVALID_HOST_PTR" << std::endl; break;
-      case CL_IMAGE_FORMAT_NOT_SUPPORTED: std::cerr << "CL_IMAGE_FORMAT_NOT_SUPPORTED" << std::endl; break;
-      case CL_MEM_OBJECT_ALLOCATION_FAILURE: std::cerr << "CL_MEM_OBJECT_ALLOCATION_FAILURE" << std::endl; break;
-      case CL_INVALID_OPERATION: std::cerr << "CL_INVALID_OPERATION: no device supporting image" << std::endl; break;
+    case CL_INVALID_CONTEXT:
+      std::cerr << "CL_INVALID_CONTEXT" << std::endl;
+      break;
+    case CL_INVALID_VALUE:
+      std::cerr << "CL_INVALID_VALUE" << std::endl;
+      break;
+    case CL_INVALID_IMAGE_SIZE:
+      std::cerr << "CL_INVALID_IMAGE_SIZE" << std::endl;
+      break;
+    case CL_INVALID_HOST_PTR:
+      std::cerr << "CL_INVALID_HOST_PTR" << std::endl;
+      break;
+    case CL_IMAGE_FORMAT_NOT_SUPPORTED:
+      std::cerr << "CL_IMAGE_FORMAT_NOT_SUPPORTED" << std::endl;
+      break;
+    case CL_MEM_OBJECT_ALLOCATION_FAILURE:
+      std::cerr << "CL_MEM_OBJECT_ALLOCATION_FAILURE" << std::endl;
+      break;
+    case CL_INVALID_OPERATION:
+      std::cerr << "CL_INVALID_OPERATION: no device supporting image"
+                << std::endl;
+      break;
     }
     CHECK(err);
   }
+  cl::Image2D img_out(context, CL_MEM_WRITE_ONLY, {CL_RGBA, CL_UNSIGNED_INT8},
+                      img.width(), img.height(), 0, 0, &err);
+  CHECK(err);
 
   // Load kernel source
   std::ifstream file("kernel.cl");
@@ -149,9 +157,11 @@ int main() {
   // Create kernel
   cl::Kernel kernel(program, "invert", &err);
   CHECK(err);
-  err = kernel.setArg(0, cl_img);
+  err = kernel.setArg(0, img_in);
+  err = kernel.setArg(1, img_out);
   if (err == CL_INVALID_MEM_OBJECT) {
-    std::cerr << "kernel argument setting failed with CL_INVALID_MEM_OBJECT" << std::endl;
+    std::cerr << "kernel argument setting failed with CL_INVALID_MEM_OBJECT"
+              << std::endl;
   }
   CHECK(err);
 
@@ -160,17 +170,23 @@ int main() {
   CHECK(err);
   cl::Event event;
   err = queue.enqueueNDRangeKernel(kernel, cl::NullRange,
-                                   cl::NDRange(RESULTLENGTH), cl::NDRange(1, 1),
-                                   NULL, &event);
+                                   cl::NDRange(img.width(), img.height()),
+                                   cl::NDRange(1, 1), NULL, &event);
   CHECK(err);
 
   // Queue reading result
   event.wait();
-  err = queue.enqueueReadBuffer(outCL, CL_TRUE, 0, RESULTLENGTH, outH);
+  cl::size_t<3> origin;
+  origin[0] = 0;
+  origin[1] = 0;
+  origin[2] = 0;
+  cl::size_t<3> region;
+  region[0] = img.width();
+  region[1] = img.height();
+  region[2] = 1;
+  err = queue.enqueueReadImage(img_out, CL_TRUE, origin, region, 0, 0,
+                               (void *)img.data);
   CHECK(err);
-  std::cout << outH;
-  return EXIT_SUCCESS;
 
-  // Cleanup maybe
-  delete outH;
+  return EXIT_SUCCESS;
 }

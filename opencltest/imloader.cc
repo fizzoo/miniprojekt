@@ -61,9 +61,7 @@ Image::Image(std::string filename) {
     row_pointers[i] = data + i * rowbytes;
   }
 
-  // Loads the data into row_pointers, hence actually into _data
-  png_read_image(pngp, row_pointers);
-
+  // Try to expand to rgba.
   int bit_depth = png_get_bit_depth(pngp, pngi);
   int color_type = png_get_color_type(pngp, pngi);
   if (color_type == PNG_COLOR_TYPE_PALETTE)
@@ -75,7 +73,11 @@ Image::Image(std::string filename) {
   if (color_type == PNG_COLOR_TYPE_RGB)
     png_set_filler(pngp, 255, PNG_FILLER_BEFORE);
 
+  // Loads the data into row_pointers, hence actually into _data
+  png_read_image(pngp, row_pointers);
+
   delete row_pointers;
+  fclose(fp);
 }
 
 void Image::writepng(std::string filename) {}
