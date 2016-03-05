@@ -10,8 +10,8 @@ namespace iml {
 class Image {
 private:
   bool ok;
-  png_structp pngp;
-  png_infop pngi;
+  size_t _width;
+  size_t _height;
 
 public:
   /**
@@ -24,20 +24,25 @@ public:
    * Loads image, allocates data and initializes everything.
    * Check if ok before using by a bool conversion.
    */
-  Image(std::string filename);
+  Image(const std::string filename);
 
   /**
-   * Deallocates data, pngp and pngi.
+   * Deallocates data.
    */
   ~Image();
 
-  void writepng(std::string filename);
-
-  size_t height();
-  size_t width();
+  size_t width() { return _width; }
+  size_t height() { return _height; }
 
   operator bool() { return ok; }
 };
+
+/**
+ * Writes the data to a png.
+ */
+bool writepng(const std::string filename, Image img);
+bool writepng(const std::string filename, size_t width, size_t height,
+              const unsigned char *data);
 }
 
 #endif /* end of include guard: IMLOADER_H */

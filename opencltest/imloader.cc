@@ -9,7 +9,7 @@ using namespace iml;
     return;                                                                    \
   }
 
-Image::Image(std::string filename) {
+Image::Image(const std::string filename) {
   // Assuming nothing is broken before we even begin.
   ok = 1;
 
@@ -25,39 +25,40 @@ Image::Image(std::string filename) {
   if (!is_png)
     FAIL("Not a png");
 
-  pngp =
+  png_structp pngp =
       png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
   if (!pngp)
     FAIL("Couldn't create png struct");
 
   png_set_sig_bytes(pngp, 8);
 
-  pngi = png_create_info_struct(pngp);
+  png_infop pngi = png_create_info_struct(pngp);
   if (!pngi)
     FAIL("Couldn't create info struct");
 
   png_init_io(pngp, fp);
   png_read_info(pngp, pngi);
 
-  auto image_height = height();
-  if (image_height <= 0) {
-    FAIL("Found no image data, zero height");
+  _height = png_get_image_height(pngp, pngi);
+  _width = png_get_image_width(pngp, pngi);
+  if (_height <= 0 || _width <= 0) {
+    FAIL("Found no image data, zero dimension");
   }
 
   int rowbytes = png_get_rowbytes(pngp, pngi);
-  unsigned char **row_pointers = new unsigned char *[image_height];
+  unsigned char **row_pointers = new unsigned char *[_height];
   if (!row_pointers) {
     delete row_pointers;
     FAIL("Couldn't allocate rowp");
   }
 
-  data = new unsigned char[rowbytes * image_height];
+  data = new unsigned char[rowbytes * _height];
   if (!data) {
     delete row_pointers;
     FAIL("Couldn't allocate image data buffer.");
   }
 
-  for (unsigned int i = 0; i < image_height; ++i) {
+  for (unsigned int i = 0; i < _height; ++i) {
     row_pointers[i] = data + i * rowbytes;
   }
 
@@ -77,16 +78,21 @@ Image::Image(std::string filename) {
   png_read_image(pngp, row_pointers);
 
   delete row_pointers;
+  png_destroy_read_struct(&pngp, &pngi, nullptr);
   fclose(fp);
 }
 
-void Image::writepng(std::string filename) {}
-
-size_t Image::height() { return png_get_image_height(pngp, pngi); }
-
-size_t Image::width() { return png_get_image_width(pngp, pngi); }
-
-Image::~Image() {
-  png_destroy_read_struct(&pngp, &pngi, nullptr);
-  delete data;
+bool writepng(const std::string filename, Image img) {
+  return writepng(filename, img.width(), img.height(), img.data);
 }
+
+bool writepng(const std::string filename, size_t width, size_t height,
+              const unsigned char *data) {
+  FILE *fp = fopen(filename.c_str(), "wb");
+  if (!fp) {
+    return false;
+  }
+  return true;
+}
+
+Image::~Image() { delete data; }
