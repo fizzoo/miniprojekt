@@ -87,7 +87,7 @@ bool iml::writepng(const std::string filename, Image *img) {
 }
 
 bool iml::writepng(const std::string filename, size_t width, size_t height,
-              unsigned char *data) {
+                   unsigned char *data) {
   FILE *fp = fopen(filename.c_str(), "wb");
   if (!fp) {
     return false;
@@ -106,19 +106,22 @@ bool iml::writepng(const std::string filename, size_t width, size_t height,
   png_init_io(pngp, fp);
 
   png_set_IHDR(pngp, pngi, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
-             PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+               PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+               PNG_FILTER_TYPE_DEFAULT);
 
   png_write_info(pngp, pngi);
 
   unsigned char **row_pointers = new unsigned char *[height];
   for (size_t i = 0; i < height; ++i) {
-    row_pointers[i] = data + i*width*4;
+    row_pointers[i] = data + i * width * 4;
   }
   png_write_image(pngp, row_pointers);
   delete[] row_pointers;
 
+  png_write_end(pngp, pngi);
+  png_destroy_write_struct(&pngp, &pngi);
+
   return true;
 }
-
 
 Image::~Image() { delete[] data; }
