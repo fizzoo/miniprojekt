@@ -48,13 +48,13 @@ Image::Image(const std::string filename) {
   int rowbytes = png_get_rowbytes(pngp, pngi);
   unsigned char **row_pointers = new unsigned char *[_height];
   if (!row_pointers) {
-    delete row_pointers;
+    delete[] row_pointers;
     FAIL("Couldn't allocate rowp");
   }
 
   data = new unsigned char[rowbytes * _height];
   if (!data) {
-    delete row_pointers;
+    delete[] row_pointers;
     FAIL("Couldn't allocate image data buffer.");
   }
 
@@ -77,22 +77,48 @@ Image::Image(const std::string filename) {
   // Loads the data into row_pointers, hence actually into _data
   png_read_image(pngp, row_pointers);
 
-  delete row_pointers;
+  delete[] row_pointers;
   png_destroy_read_struct(&pngp, &pngi, nullptr);
   fclose(fp);
 }
 
-bool writepng(const std::string filename, Image img) {
-  return writepng(filename, img.width(), img.height(), img.data);
+bool iml::writepng(const std::string filename, Image *img) {
+  return writepng(filename, img->width(), img->height(), img->data);
 }
 
-bool writepng(const std::string filename, size_t width, size_t height,
-              const unsigned char *data) {
+bool iml::writepng(const std::string filename, size_t width, size_t height,
+              unsigned char *data) {
   FILE *fp = fopen(filename.c_str(), "wb");
   if (!fp) {
     return false;
   }
+
+  png_structp pngp =
+      png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+  if (!pngp)
+    return false;
+  png_infop pngi = png_create_info_struct(pngp);
+  if (!pngi) {
+    png_destroy_write_struct(&pngp, (png_infopp)NULL);
+    return false;
+  }
+
+  png_init_io(pngp, fp);
+
+  png_set_IHDR(pngp, pngi, width, height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+             PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+  png_write_info(pngp, pngi);
+
+  unsigned char **row_pointers = new unsigned char *[height];
+  for (size_t i = 0; i < height; ++i) {
+    row_pointers[i] = data + i*width*4;
+  }
+  png_write_image(pngp, row_pointers);
+  delete[] row_pointers;
+
   return true;
 }
 
-Image::~Image() { delete data; }
+
+Image::~Image() { delete[] data; }

@@ -13,6 +13,11 @@ private:
   size_t _width;
   size_t _height;
 
+  Image(Image const & rhs) = delete;
+  Image(Image && rhs) = delete;
+  Image& operator=(Image const & rhs) noexcept = delete;
+  Image& operator=(Image && rhs) noexcept = delete;
+
 public:
   /**
    * Free access. Don't use anything beyond width*height*4 (All images expanded
@@ -39,10 +44,11 @@ public:
 
 /**
  * Writes the data to a png.
+ * Can't const data due to libpng, but it shouldn't be edited.
  */
-bool writepng(const std::string filename, Image img);
+bool writepng(const std::string filename, Image *img);
 bool writepng(const std::string filename, size_t width, size_t height,
-              const unsigned char *data);
+              unsigned char *data);
 }
 
 #endif /* end of include guard: IMLOADER_H */

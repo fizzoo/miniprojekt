@@ -188,5 +188,8 @@ int main() {
                                (void *)img.data);
   CHECK(err);
 
-  return EXIT_SUCCESS;
+  bool written = iml::writepng("out.png", &img);
+  if (!written) {
+    std::cerr << "Couldn't write file" << std::endl;
+  }
 }
