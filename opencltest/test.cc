@@ -96,6 +96,8 @@ int main() {
               << dev.getInfo<CL_DEVICE_GLOBAL_MEM_CACHE_SIZE>() << "\n";
     std::cerr << "local mem: " << dev.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
               << "\n";
+    std::cerr << "max workgroup size: "
+              << dev.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << "\n";
     std::cerr << std::endl;
   }
 
