@@ -50,6 +50,11 @@ Image::Image(std::string filename) {
   png_read_image(pngp, row_pointers);
 
   delete row_pointers;
+
+  if (height() <= 0)
+    FAIL("height error");
+  if (width() <= 0)
+    FAIL("width error");
 }
 
 size_t Image::height() { return png_get_image_height(pngp, pngi); }

@@ -110,9 +110,25 @@ int main() {
   CHECK(err);
 
   iml::Image img("foo.png");
-  cl::Image2D(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-              {CL_RGB, CL_UNSIGNED_INT8}, img.width(), img.height(), 0,
-              img.data());
+  if (!img) {
+    std::cerr << "Image loaded incorrectly" << std::endl;
+    exit(-1);
+  }
+  cl::Image2D cl_img(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+              {CL_RGBA, CL_UNSIGNED_INT8}, img.width(), img.height(), 0,
+              img.data(), &err);
+  if (err) {
+    switch (err) {
+      case CL_INVALID_CONTEXT: std::cerr << "CL_INVALID_CONTEXT" << std::endl; break;
+      case CL_INVALID_VALUE: std::cerr << "CL_INVALID_VALUE" << std::endl; break;
+      case CL_INVALID_IMAGE_SIZE: std::cerr << "CL_INVALID_IMAGE_SIZE" << std::endl; break;
+      case CL_INVALID_HOST_PTR: std::cerr << "CL_INVALID_HOST_PTR" << std::endl; break;
+      case CL_IMAGE_FORMAT_NOT_SUPPORTED: std::cerr << "CL_IMAGE_FORMAT_NOT_SUPPORTED" << std::endl; break;
+      case CL_MEM_OBJECT_ALLOCATION_FAILURE: std::cerr << "CL_MEM_OBJECT_ALLOCATION_FAILURE" << std::endl; break;
+      case CL_INVALID_OPERATION: std::cerr << "CL_INVALID_OPERATION: no device supporting image" << std::endl; break;
+    }
+    CHECK(err);
+  }
 
   // Load kernel source
   std::ifstream file("kernel.cl");
@@ -131,9 +147,12 @@ int main() {
   checkBuildErr(err, &devices[0], &program);
 
   // Create kernel
-  cl::Kernel kernel(program, "hello", &err);
+  cl::Kernel kernel(program, "invert", &err);
   CHECK(err);
-  err = kernel.setArg(0, outCL);
+  err = kernel.setArg(0, cl_img);
+  if (err == CL_INVALID_MEM_OBJECT) {
+    std::cerr << "kernel argument setting failed with CL_INVALID_MEM_OBJECT" << std::endl;
+  }
   CHECK(err);
 
   // Queue kernel

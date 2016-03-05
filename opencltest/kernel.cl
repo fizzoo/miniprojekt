@@ -1,7 +1,8 @@
-kernel void invert(__global image2d_t *img) {
-  size_t xid = get_global_id(0);
-  size_t yid = get_global_id(1);
-  int2 xy = int2(xid, yid);
+kernel void invert(image2d_t img) {
+  size_t x = get_global_id(0);
+  size_t y = get_global_id(1);
 
-  img[yid*2 + xid] = 255 - img[yid*2 + xid];
+  uint4 point = read_imageui(img, (int2)(x,y));
+  point = (uint4)255 - point;
+  //write_imageui(img, (int2)(x,y), point);
 }
