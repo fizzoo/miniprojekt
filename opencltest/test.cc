@@ -160,6 +160,7 @@ int main() {
   cl::Kernel kernel(program, "invert", &err);
   CHECK(err);
   err = kernel.setArg(0, img_in);
+  CHECK(err);
   err = kernel.setArg(1, img_out);
   CHECK(err);
 
