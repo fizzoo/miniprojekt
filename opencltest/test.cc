@@ -161,10 +161,6 @@ int main() {
   CHECK(err);
   err = kernel.setArg(0, img_in);
   err = kernel.setArg(1, img_out);
-  if (err == CL_INVALID_MEM_OBJECT) {
-    std::cerr << "kernel argument setting failed with CL_INVALID_MEM_OBJECT"
-              << std::endl;
-  }
   CHECK(err);
 
   // Queue kernel
