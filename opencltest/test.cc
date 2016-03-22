@@ -1,7 +1,5 @@
 /**
- * Following the amd Intro OpenCL Tutorial.
- * Some things are deprecated and needed change.
- * Comments by me.
+ * Just prints information that openCL can see.
  */
 
 #include <utility>
@@ -12,7 +10,6 @@
 #include <iostream>
 #include <string>
 #include <iterator>
-#include "imloader.h"
 
 /**
  * Checks that err is 0, otherwise exits with debug information. Since this is
@@ -28,25 +25,9 @@
     exit(-1);                                                                  \
   }
 
-/**
- * If build fails, print the compilation output and exit.
- */
-void checkBuildErr(cl_int err, cl::Device *d, cl::Program *p) {
-  if (err != CL_SUCCESS) {
-    std::cerr << "ERROR: Building OpenCL program failed!\n";
-    std::string log;
-    p->getBuildInfo(*d, (cl_program_build_info)CL_PROGRAM_BUILD_LOG, &log);
-    std::cerr << log << std::endl;
-    exit(-2);
-  }
-}
-
 int main() {
   cl_int err;
 
-  // Since we can't specify which platform we actually want (in this program,
-  // no interaction), this won't help with the helloworld. However, print the
-  // information.
   {
     // Get platforms available
     std::vector<cl::Platform> platformList;
@@ -99,96 +80,5 @@ int main() {
     std::cerr << "max workgroup size: "
               << dev.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << "\n";
     std::cerr << std::endl;
-  }
-
-  iml::Image img("foo.png");
-  if (!img) {
-    std::cerr << "Image loaded incorrectly" << std::endl;
-    exit(-1);
-  }
-  cl::Image2D img_in(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                     {CL_RGBA, CL_UNSIGNED_INT8}, img.width(), img.height(), 0,
-                     img.data, &err);
-  if (err) {
-    switch (err) {
-    case CL_INVALID_CONTEXT:
-      std::cerr << "CL_INVALID_CONTEXT" << std::endl;
-      break;
-    case CL_INVALID_VALUE:
-      std::cerr << "CL_INVALID_VALUE" << std::endl;
-      break;
-    case CL_INVALID_IMAGE_SIZE:
-      std::cerr << "CL_INVALID_IMAGE_SIZE" << std::endl;
-      break;
-    case CL_INVALID_HOST_PTR:
-      std::cerr << "CL_INVALID_HOST_PTR" << std::endl;
-      break;
-    case CL_IMAGE_FORMAT_NOT_SUPPORTED:
-      std::cerr << "CL_IMAGE_FORMAT_NOT_SUPPORTED" << std::endl;
-      break;
-    case CL_MEM_OBJECT_ALLOCATION_FAILURE:
-      std::cerr << "CL_MEM_OBJECT_ALLOCATION_FAILURE" << std::endl;
-      break;
-    case CL_INVALID_OPERATION:
-      std::cerr << "CL_INVALID_OPERATION: no device supporting image"
-                << std::endl;
-      break;
-    }
-    CHECK(err);
-  }
-  cl::Image2D img_out(context, CL_MEM_WRITE_ONLY, {CL_RGBA, CL_UNSIGNED_INT8},
-                      img.width(), img.height(), 0, 0, &err);
-  CHECK(err);
-
-  // Load kernel source
-  std::ifstream file("kernel.cl");
-  if (!file) {
-    std::cerr << "Kernel source file not opened correctly" << std::endl;
-    exit(-1);
-  }
-  std::string prog{std::istreambuf_iterator<char>(file),
-                   std::istreambuf_iterator<char>()};
-
-  // Create program
-  cl::Program::Sources source(1,
-                              std::make_pair(prog.c_str(), prog.length() + 1));
-  cl::Program program(context, source);
-  err = program.build(devices, "");
-  checkBuildErr(err, &devices[0], &program);
-
-  // Create kernel
-  cl::Kernel kernel(program, "invert", &err);
-  CHECK(err);
-  err = kernel.setArg(0, img_in);
-  CHECK(err);
-  err = kernel.setArg(1, img_out);
-  CHECK(err);
-
-  // Queue kernel
-  cl::CommandQueue queue(context, devices[0], 0, &err);
-  CHECK(err);
-  cl::Event event;
-  err = queue.enqueueNDRangeKernel(kernel, cl::NullRange,
-                                   cl::NDRange(img.width(), img.height()),
-                                   cl::NDRange(1, 1), NULL, &event);
-  CHECK(err);
-
-  // Queue reading result
-  event.wait();
-  cl::size_t<3> origin;
-  origin[0] = 0;
-  origin[1] = 0;
-  origin[2] = 0;
-  cl::size_t<3> region;
-  region[0] = img.width();
-  region[1] = img.height();
-  region[2] = 1;
-  err = queue.enqueueReadImage(img_out, CL_TRUE, origin, region, 0, 0,
-                               (void *)img.data);
-  CHECK(err);
-
-  bool written = iml::writepng("out.png", &img);
-  if (!written) {
-    std::cerr << "Couldn't write file" << std::endl;
   }
 }
