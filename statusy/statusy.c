@@ -3,13 +3,13 @@
  */
 
 #include <ncurses.h>
-#include <locale.h>
 
 #define INPUTS 8
 #define BUFFERSIZE 2048
 
 char buffer[BUFFERSIZE];
 char *inp[INPUTS];
+bool running = 1;
 
 /**
  * Distance to first '\n' or '\0'.
@@ -82,41 +82,66 @@ void write_status(char *buf, int maxx, int maxy) {
     x = startx;
 
     while (*buf != '\0' && *buf != '\n') {
-      if (*buf == 230) {
-        ++buf;
-      }
       mvaddch(y, x++, *buf++);
     }
   }
 }
 
+void doer() {
+  int c = getch();
+  switch (c) {
+  case ERR:
+    return;
+  case 'q':
+    running = false;
+    break;
+  case KEY_UP:
+    mvaddch(10, 10, 'W');
+    break;
+  case KEY_DOWN:
+    mvaddch(10, 11, 'S');
+    break;
+  case KEY_LEFT:
+    mvaddch(10, 12, 'A');
+    break;
+  case KEY_RIGHT:
+    mvaddch(10, 13, 'D');
+    break;
+  }
+  refresh();
+}
+
 int main(void) {
-  int maxx, maxy;
+  int maxx = 80, maxy = 80, tmp_maxx, tmp_maxy;
+
   inp[0] = "date";
   inp[1] = "acpi";
   inp[2] = "nmcli d | ag wifi";
 
-  setlocale(LC_ALL, "");
   initscr();
-  cbreak();
+  raw();
   keypad(stdscr, TRUE);
   curs_set(0);
+  noecho();
+  timeout(250);
 
-  // inp[1] = acpi;
+  while (running) {
+    getmaxyx(stdscr, tmp_maxy, tmp_maxx);
+    if (tmp_maxx != maxx || tmp_maxy != maxy) {
+      maxx = tmp_maxx;
+      maxy = tmp_maxy;
+      erase();
+    }
 
-  for (;;) {
-    getmaxyx(stdscr, maxy, maxx);
-
-    erase();
     get_status(buffer);
     write_status(buffer, maxx, maxy);
 
     refresh();
 
-    timeout(250);
+    doer();
   }
 
-cleanup:
-  nocbreak();
+  noraw();
+  echo();
   endwin();
 }
