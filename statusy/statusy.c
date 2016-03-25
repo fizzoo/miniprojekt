@@ -5,16 +5,15 @@
 #include <ncurses.h>
 
 #define INPUTS 8
+#define BUFFERSIZE 2048
 
-char buf[1024];
+char buffer[BUFFERSIZE];
 char *inp[INPUTS];
-char *date = "date";
-char *acpi = "acpi";
 
 /**
  * Distance to first '\n' or '\0'.
  */
-int _strlen(char *p) {
+int linelen(char *p) {
   int res = 0;
   while (*p != '\n' && *p != '\0') {
     ++p;
@@ -23,44 +22,88 @@ int _strlen(char *p) {
   return res;
 }
 
-void write_status(void) {
-  FILE *fp;
-  char *s;
-  int wx, wy, strwidth;
+/**
+ * Pointer to first null character in array.
+ */
+char *firstnull(char *p) {
+  while (*p != '\0') {
+    ++p;
+  }
+  return p;
+}
 
-  getmaxyx(stdscr, wy, wx);
+void get_status(char *buf) {
+  FILE *fp;
+  int sizeleft = BUFFERSIZE - 1;
+  char a;
 
   for (int i = 0; i < INPUTS; ++i) {
-    s = inp[i];
-    if (!s) {
+    if (!inp[i]) {
+      // No command in this slot
       continue;
     }
 
-    fp = popen(s, "r");
+    fp = popen(inp[i], "r");
     if (!fp) {
+      // Failed to find/open command
       continue;
     }
 
-    fgets(buf, sizeof(buf) - 1, fp); // hope it fits
+    while (sizeleft > 0 && (a = getc_unlocked(fp)) != EOF) {
+      --sizeleft;
+      *buf++ = a;
+    }
+    --sizeleft;
+    *buf++ = 7;
     fclose(fp);
-
-    strwidth = _strlen(buf);
-    mvaddstr(i + wy / 2 - INPUTS, wx / 2 - strwidth / 2, buf);
   }
-  refresh();
+
+  *buf = '\0';
+}
+
+void write_status(char *buf, int maxx, int maxy) {
+  int linelength = linelen(buf);
+  int i = 0;
+
+  while (*buf != '\0') {
+    if (*buf == '\n') {
+      ++buf;
+      ++i;
+      continue;
+    }
+    if (*buf == 7) {
+      // End of one command, recalculate width.
+      ++buf;
+      ++i;
+      linelength = linelen(buf);
+    }
+
+    mvaddnstr(i + maxy / 2 - INPUTS, maxx / 2 - linelength / 2, buf,
+              linelength);
+    buf += linelen(buf);
+  }
 }
 
 int main(void) {
+  int maxx, maxy;
+  inp[0] = "date";
+  inp[1] = "acpi";
+  inp[2] = "nmcli d wifi list";
+
   initscr();
   cbreak();
   keypad(stdscr, TRUE);
   curs_set(0);
 
-  inp[0] = date;
   // inp[1] = acpi;
 
   for (;;) {
-    write_status();
+    getmaxyx(stdscr, maxy, maxx);
+
+    get_status(buffer);
+    write_status(buffer, maxx, maxy);
+
+    refresh();
 
     timeout(250);
   }
