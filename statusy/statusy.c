@@ -3,6 +3,7 @@
  */
 
 #include <ncurses.h>
+#include <locale.h>
 
 #define INPUTS 8
 #define BUFFERSIZE 2048
@@ -62,25 +63,30 @@ void get_status(char *buf) {
 }
 
 void write_status(char *buf, int maxx, int maxy) {
-  int linelength = linelen(buf);
-  int i = 0;
+  int y = maxy / 2 - INPUTS;
+  int startx = maxx / 2 - linelen(buf) / 2;
+  int x;
 
   while (*buf != '\0') {
     if (*buf == '\n') {
       ++buf;
-      ++i;
+      ++y;
       continue;
     }
     if (*buf == 7) {
       // End of one command, recalculate width.
       ++buf;
-      ++i;
-      linelength = linelen(buf);
+      ++y;
+      startx = maxx / 2 - linelen(buf) / 2;
     }
+    x = startx;
 
-    mvaddnstr(i + maxy / 2 - INPUTS, maxx / 2 - linelength / 2, buf,
-              linelength);
-    buf += linelen(buf);
+    while (*buf != '\0' && *buf != '\n') {
+      if (*buf == 230) {
+        ++buf;
+      }
+      mvaddch(y, x++, *buf++);
+    }
   }
 }
 
@@ -88,8 +94,9 @@ int main(void) {
   int maxx, maxy;
   inp[0] = "date";
   inp[1] = "acpi";
-  inp[2] = "nmcli d wifi list";
+  inp[2] = "nmcli d | ag wifi";
 
+  setlocale(LC_ALL, "");
   initscr();
   cbreak();
   keypad(stdscr, TRUE);
@@ -100,6 +107,7 @@ int main(void) {
   for (;;) {
     getmaxyx(stdscr, maxy, maxx);
 
+    erase();
     get_status(buffer);
     write_status(buffer, maxx, maxy);
 

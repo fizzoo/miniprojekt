@@ -1,5 +1,5 @@
 CFLAGS=-Og -g
-LDLIBS=-lncursesw
+LDLIBS=-lncurses
 
 
 statusy:
