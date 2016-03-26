@@ -105,7 +105,7 @@ void doer() {
 }
 
 int main(void) {
-  int maxx = 80, maxy = 80, tmp_maxx, tmp_maxy;
+  int maxx, maxy;
 
   inp[0] = "date";
   inp[1] = "acpi";
@@ -118,12 +118,7 @@ int main(void) {
   timeout(100);
 
   while (running) {
-    getmaxyx(stdscr, tmp_maxy, tmp_maxx);
-    if (tmp_maxx != maxx || tmp_maxy != maxy) {
-      maxx = tmp_maxx;
-      maxy = tmp_maxy;
-      erase();
-    }
+    getmaxyx(stdscr, maxy, maxx);
 
     get_status(buffer);
     write_status(buffer, maxx, maxy);
