@@ -3,13 +3,26 @@
  */
 
 #include <ncurses.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#define INPUTS 8
-#define BUFFERSIZE 2048
+#define NRINPUTS 8
+#define BUFFERSIZE 4096
 
 char buffer[BUFFERSIZE];
-char *inp[INPUTS];
+char *commands[NRINPUTS];
 bool running = 1;
+
+/**
+ * Redirects stderr to the file specified by filename.
+ */
+void redirect_err_to(char *filename) {
+  int fd;
+
+  fd = open(filename, O_WRONLY);
+  dup2(fd, 2);
+  close(fd);
+}
 
 /**
  * Distance to first '\n' or '\0'.
@@ -33,37 +46,53 @@ char *firstnull(char *p) {
   return p;
 }
 
-void get_status(char *buf) {
+/**
+ * Executes the command and places the resulting string in buf, followed by
+ * exiter, and returns a pointer just beyond that.
+ */
+char *read_command(char *command, char *buf, char exiter) {
   FILE *fp;
-  int sizeleft = BUFFERSIZE - 1;
-  char a;
+  char a, *start = buf;
 
-  for (int i = 0; i < INPUTS; ++i) {
-    if (!inp[i]) {
+  fp = popen(command, "r");
+  if (!fp) {
+    return buf;
+  }
+
+  while ((a = getc_unlocked(fp)) != EOF) {
+    *buf++ = a;
+  }
+  if (start != buf) {
+    // Wrote something
+    *buf++ = exiter;
+  }
+  pclose(fp);
+
+  return buf;
+}
+
+/**
+ * Iterates through the available commands, executes the commands and gathers
+ * their output to buf.
+ */
+void get_status(char *buf) {
+  for (int i = 0; i < NRINPUTS; ++i) {
+    if (!commands[i]) {
       // No command in this slot
       continue;
     }
 
-    fp = popen(inp[i], "r");
-    if (!fp) {
-      // Failed to find/open command
-      continue;
-    }
-
-    while (sizeleft > 0 && (a = getc_unlocked(fp)) != EOF) {
-      --sizeleft;
-      *buf++ = a;
-    }
-    --sizeleft;
-    *buf++ = 7;
-    fclose(fp);
+    buf = read_command(commands[i], buf, 7);
   }
 
   *buf = '\0';
 }
 
+/**
+ * Writes the status information in buf, formatted for the screen.
+ */
 void write_status(char *buf, int maxx, int maxy) {
-  int y = maxy / 2 - INPUTS;
+  int y = maxy / 2 - NRINPUTS;
   int startx = maxx / 2 - linelen(buf) / 2;
   int x;
 
@@ -78,15 +107,19 @@ void write_status(char *buf, int maxx, int maxy) {
       ++buf;
       ++y;
       startx = maxx / 2 - linelen(buf) / 2;
+      continue;
     }
     x = startx;
 
-    while (*buf != '\0' && *buf != '\n') {
+    while (*buf != '\0' && *buf != '\n' && *buf != 7) {
       mvaddch(y, x++, *buf++);
     }
   }
 }
 
+/**
+ * Handles user input.
+ */
 void doer() {
   int c = getch();
   switch (c) {
@@ -96,10 +129,10 @@ void doer() {
     running = false;
     break;
   case 'w':
-    if (!inp[3]) {
-      inp[3] = "nmcli d wifi";
+    if (!commands[3]) {
+      commands[3] = "nmcli d wifi";
     } else {
-      inp[3] = NULL;
+      commands[3] = NULL;
     }
   }
 }
@@ -107,8 +140,10 @@ void doer() {
 int main(void) {
   int maxx, maxy;
 
-  inp[0] = "date";
-  inp[1] = "acpi";
+  redirect_err_to("/dev/null");
+
+  commands[0] = "date";
+  commands[1] = "acpi";
 
   initscr();
   raw();
