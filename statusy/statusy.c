@@ -95,20 +95,13 @@ void doer() {
   case 'q':
     running = false;
     break;
-  case KEY_UP:
-    mvaddch(10, 10, 'W');
-    break;
-  case KEY_DOWN:
-    mvaddch(10, 11, 'S');
-    break;
-  case KEY_LEFT:
-    mvaddch(10, 12, 'A');
-    break;
-  case KEY_RIGHT:
-    mvaddch(10, 13, 'D');
-    break;
+  case 'w':
+    if (!inp[3]) {
+      inp[3] = "nmcli d wifi";
+    } else {
+      inp[3] = NULL;
+    }
   }
-  refresh();
 }
 
 int main(void) {
@@ -116,14 +109,13 @@ int main(void) {
 
   inp[0] = "date";
   inp[1] = "acpi";
-  inp[2] = "nmcli d | ag wifi";
 
   initscr();
   raw();
   keypad(stdscr, TRUE);
   curs_set(0);
   noecho();
-  timeout(250);
+  timeout(100);
 
   while (running) {
     getmaxyx(stdscr, tmp_maxy, tmp_maxx);
@@ -139,6 +131,7 @@ int main(void) {
     refresh();
 
     doer();
+    erase();
   }
 
   noraw();
