@@ -4,5 +4,5 @@ LDLIBS=-lncurses
 
 statusy:
 
-install:
+install: statusy
 	sudo cp statusy /usr/local/bin/statusy
