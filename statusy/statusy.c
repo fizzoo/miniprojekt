@@ -113,7 +113,11 @@ void write_status(char *buf, int maxx, int maxy) {
     x = startx;
 
     while (*buf != '\0' && *buf != '\n' && *buf != 7) {
-      mvaddch(y, x++, *buf++);
+      if (y >= 0 && y < maxy && x >= 0 && x < maxx) {
+        mvaddch(y, x, *buf);
+      }
+      ++x;
+      ++buf;
     }
   }
 }
@@ -135,6 +139,7 @@ void doer() {
     } else {
       commands[3] = NULL;
     }
+    break;
   }
 }
 
