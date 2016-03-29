@@ -5,6 +5,7 @@
 #include <ncurses.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define NRINPUTS 8
 #define BUFFERSIZE 4096
@@ -151,6 +152,10 @@ int main(void) {
   curs_set(0);
   noecho();
   timeout(100);
+
+  // Solves occasional timing problem where getmaxyx keeps invalid values by
+  // saying something changed.
+  raise(SIGWINCH);
 
   while (running) {
     getmaxyx(stdscr, maxy, maxx);
