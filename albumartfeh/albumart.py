@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2015, doggone
 
@@ -70,4 +70,4 @@ while True:
     if albumart is not None:
         call(["feh", "--bg-max", "--no-fehbg", albumart])
     else:
-        call(RESETSCRIPT)
+        call(["sh", RESETSCRIPT])
