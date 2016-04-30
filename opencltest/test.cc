@@ -55,9 +55,12 @@ int main() {
   cl::Context context(CL_DEVICE_TYPE_GPU, NULL, NULL, NULL, &err);
   if (err) {
     // Fall back to CPU
+    std::cerr << "Falling back to CPU." << std::endl;
     context = cl::Context(CL_DEVICE_TYPE_CPU, NULL, NULL, NULL, &err);
   }
-  CHECK(err);
+  if (err) {
+    std::cerr << "No platforms available. Error: '" << err << "'" << std::endl;
+  }
 
   // Get device
   std::vector<cl::Device> devices;
