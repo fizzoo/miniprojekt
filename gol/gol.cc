@@ -527,10 +527,11 @@ int main(int argc, const char *argv[]) {
   }
 
   bool active = 1;
-  std::thread boardthread([&active]() {
+  bool running = 1;
+  std::thread boardthread([&active, &running]() {
     unsigned int lastfps = FPSMAX;
     Waiter runwaiter(1000 / FPSMAX);
-    while (true) {
+    while (running) {
       if (active) {
         std::unique_lock<std::mutex> f(fliplock);
         global_b.run();
@@ -553,10 +554,14 @@ int main(int argc, const char *argv[]) {
       while (SDL_PollEvent(&event)) {
         switch (event.type) {
         case SDL_QUIT:
+          running = 0;
+          boardthread.join();
           return 0;
         case SDL_KEYUP:
           switch (event.key.keysym.sym) {
           case SDLK_q:
+            running = 0;
+            boardthread.join();
             return 0;
           case SDLK_SPACE:
             active = !active;
