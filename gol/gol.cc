@@ -526,8 +526,8 @@ int main(int argc, const char *argv[]) {
     return 0;
   }
 
-  Uint32 lastframe = SDL_GetTicks();
-  Uint32 towait = 0;
+  Uint32 time_now = SDL_GetTicks();
+  Uint32 goal_time = 0;
   bool active = 1;
   int lastx = 0, lasty = 0;
   bool lbdown = 0;
@@ -643,16 +643,13 @@ int main(int argc, const char *argv[]) {
     }
 
     // FPS management, or rather just waits so it is not too fast
-    towait = SDL_GetTicks();
-    lastframe += 1000 / FPSMAX;
-    if (lastframe > towait) {
-      towait = lastframe - towait;
-    } else {
-      towait = 0;
-    }
-    lastframe = SDL_GetTicks();
-    if (towait) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(towait));
+    goal_time = time_now + 1000 / FPSMAX;
+    time_now = SDL_GetTicks();
+
+    // Continue immediately if we're too late, and we missed the goal,
+    // otherwise wait for it
+    if (goaltime > time_now) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(goal_time - time_now));
     }
 
     // run an update cycle if active
