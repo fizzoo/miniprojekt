@@ -20,7 +20,7 @@ int SIZEX = 1000;
 int SIZEY = 600;
 
 static int FPSMAX = 200;
-static const int NRTHREADS = 4;
+static const int NRTHREADS = 64;
 
 static const char *GOSPERGLIDER = "...................................."
                                   "...................................."
@@ -189,7 +189,7 @@ struct Board {
   std::vector<unsigned char> savedstate =
       std::vector<unsigned char>(SIZEX * SIZEY, 0);
 
-  ThreadPool pool{NRTHREADS};
+  ThreadPool pool;
 
   void loaddefaults() {
     input(GOSPERGLIDER, 36, 13, 10, 10);
@@ -642,6 +642,10 @@ int main(int argc, const char *argv[]) {
       }
     }
 
+#if 1
+    long int ticksinframe = SDL_GetTicks() - time_now;
+    std::cout << "Ticks: " << ticksinframe << ". Wanted frames/s: " << FPSMAX << ". Gotten frames/s: " << (ticksinframe ? 1000/ticksinframe : 0) << "." << (time_now+1000/FPSMAX > SDL_GetTicks() ? " SKIPPED." : "") << std::endl;
+#endif
     // FPS management, or rather just waits so it is not too fast
     goal_time = time_now + 1000 / FPSMAX;
     time_now = SDL_GetTicks();

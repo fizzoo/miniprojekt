@@ -1,5 +1,5 @@
 CXXFLAGS= -Wall -Wextra -pedantic -std=c++14
-OPT=-march=native -O3 -DNDEBUG -static-libgcc -static-libstdc++
+OPT=-march=native -O3 -DNDEBUG
 DEFS=
 
 ifeq ($(shell uname), Linux)
