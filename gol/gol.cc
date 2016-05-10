@@ -210,7 +210,7 @@ struct Board {
   bool aliveat(int x, int y) { return aliveactive[y * SIZEX + x] == 255; }
 
   unsigned char action(int x, int y) {
-    if (x == 0 || y == 0 || x == SIZEX - 1 || y == SIZEY - 1) {
+    if (x <= 0 || y <= 0 || x >= SIZEX - 1 || y >= SIZEY - 1) {
       return 0;
     }
 

@@ -31,7 +31,7 @@ void ThreadPool::thread_entry() {
  * CTOR creates threads, defaults to 0 -> detection of cpus.
  */
 ThreadPool::ThreadPool(unsigned number_of_threads)
-    : shutdown(false), active_threads(number_of_threads) {
+    : shutdown(false) {
   if (number_of_threads == 0) {
     number_of_threads = std::thread::hardware_concurrency();
 
@@ -40,6 +40,7 @@ ThreadPool::ThreadPool(unsigned number_of_threads)
       number_of_threads = 4;
     }
   }
+  active_threads = number_of_threads;
 
   for (unsigned i = 0; i < number_of_threads; ++i) {
     threads.emplace_back(std::bind(&ThreadPool::thread_entry, this));
