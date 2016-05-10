@@ -10,7 +10,7 @@ endif
 
 SRC=gol.cc Waiter.cc ../threadpool/threadpool.cc
 
-default: clean gol
+default: gol
 
 opt: $(SRC)
 	g++ $(OPT) -o gol $^ $(CXXFLAGS) $(LDFLAGS) $(DEFS)

@@ -22,6 +22,8 @@ int SIZEY = 600;
 static int FPSMAX = 200;
 static const int NRTHREADS = 64;
 
+static std::mutex fliplock;
+
 static const char *GOSPERGLIDER = "...................................."
                                   "...................................."
                                   "...................................."
@@ -75,9 +77,7 @@ struct double_xy {
   double_xy(double x, double y) : x(x), y(y){};
 
   // 0.01 because rounding often made em SLIGHTLY below the real position
-  int int_x() {
-    return (int(SIZEX + SIZEX * x + 0.01)) / 2;
-  }
+  int int_x() { return (int(SIZEX + SIZEX * x + 0.01)) / 2; }
   int int_y() { return (int(SIZEY - SIZEY * y + 0.01)) / 2; }
 };
 
@@ -527,132 +527,137 @@ int main(int argc, const char *argv[]) {
   }
 
   bool active = 1;
+  std::thread boardthread([&active]() {
+    Waiter runwaiter(1000 / FPSMAX);
+    while (true) {
+      if (active) {
+        std::unique_lock<std::mutex> f(fliplock);
+        global_b.run();
+      }
+      runwaiter.wait_if_fast();
+    }
+  });
+
   int lastx = 0, lasty = 0;
   bool lbdown = 0;
   bool rbdown = 0;
   SDL_Event event;
   Waiter waiter(16);
-  unsigned int last;
   while (true) {
-    while (SDL_PollEvent(&event)) {
-      switch (event.type) {
-      case SDL_QUIT:
-        return 0;
-      case SDL_KEYUP:
-        switch (event.key.keysym.sym) {
-        case SDLK_q:
+    {
+      std::unique_lock<std::mutex> f(fliplock);
+      while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+        case SDL_QUIT:
           return 0;
-        case SDLK_SPACE:
-          active = !active;
-          break;
-        case SDLK_i:
-          if (FPSMAX > 2 && FPSMAX <= 10) {
-            FPSMAX--;
-          } else if (FPSMAX > 10) {
-            FPSMAX = FPSMAX * 8 / 10;
-          }
-          waiter.set_ms_tick_length(1000/FPSMAX);
-          break;
-        case SDLK_o:
-          if (FPSMAX <= 10) {
-            FPSMAX++;
-          } else if (FPSMAX > 10) {
-            FPSMAX = FPSMAX * 12 / 10;
-          }
-          waiter.set_ms_tick_length(1000/FPSMAX);
-          break;
-        case SDLK_d:
-          for (auto &i : global_b.aliveactive) {
-            i = 0;
-          }
-          break;
-        case SDLK_r:
-          global_b.loaddefaults();
-          break;
-        case SDLK_f:
-          for (int y = 0; y < SIZEY; y++) {
-            for (int x = 0; x < SIZEX; x++) {
-              logfile << (global_b.aliveactive[y * SIZEX + x] == 255 ? 'O'
-                                                                     : ' ');
+        case SDL_KEYUP:
+          switch (event.key.keysym.sym) {
+          case SDLK_q:
+            return 0;
+          case SDLK_SPACE:
+            active = !active;
+            break;
+          case SDLK_i:
+            if (FPSMAX > 2 && FPSMAX <= 10) {
+              FPSMAX--;
+            } else if (FPSMAX > 10) {
+              FPSMAX = FPSMAX * 8 / 10;
             }
-            logfile << std::endl;
+            break;
+          case SDLK_o:
+            if (FPSMAX <= 10) {
+              FPSMAX++;
+            } else if (FPSMAX > 10) {
+              FPSMAX = FPSMAX * 12 / 10;
+            }
+            break;
+          case SDLK_d:
+            for (auto &i : global_b.aliveactive) {
+              i = 0;
+            }
+            break;
+          case SDLK_r:
+            global_b.loaddefaults();
+            break;
+          case SDLK_f:
+            for (int y = 0; y < SIZEY; y++) {
+              for (int x = 0; x < SIZEX; x++) {
+                logfile << (global_b.aliveactive[y * SIZEX + x] == 255 ? 'O'
+                                                                       : ' ');
+              }
+              logfile << std::endl;
+            }
+            break;
+          case SDLK_s:
+            global_b.save();
+            break;
+          case SDLK_l:
+            global_b.load();
+            break;
+          case SDLK_PERIOD:
+            global_b.run();
+            break;
           }
           break;
-        case SDLK_s:
-          global_b.save();
+        case SDL_MOUSEBUTTONDOWN:
+          lastx = event.button.x;
+          lasty = event.button.y;
+          switch (event.button.button) {
+          case SDL_BUTTON_LEFT:
+            global_b.letlive_scaled(double_xy(lastx, lasty), state.loc);
+            lbdown = 1;
+            break;
+          case SDL_BUTTON_RIGHT:
+            global_b.letdie_scaled(double_xy(lastx, lasty), state.loc);
+            rbdown = 1;
+            break;
+          }
           break;
-        case SDLK_l:
-          global_b.load();
+        case SDL_MOUSEBUTTONUP:
+          switch (event.button.button) {
+          case SDL_BUTTON_LEFT:
+            lbdown = 0;
+            break;
+          case SDL_BUTTON_RIGHT:
+            rbdown = 0;
+            break;
+          }
           break;
-        case SDLK_PERIOD:
-          global_b.run();
-          break;
-        }
-        break;
-      case SDL_MOUSEBUTTONDOWN:
-        lastx = event.button.x;
-        lasty = event.button.y;
-        switch (event.button.button) {
-        case SDL_BUTTON_LEFT:
-          global_b.letlive_scaled(double_xy(lastx, lasty), state.loc);
-          lbdown = 1;
-          break;
-        case SDL_BUTTON_RIGHT:
-          global_b.letdie_scaled(double_xy(lastx, lasty), state.loc);
-          rbdown = 1;
-          break;
-        }
-        break;
-      case SDL_MOUSEBUTTONUP:
-        switch (event.button.button) {
-        case SDL_BUTTON_LEFT:
-          lbdown = 0;
-          break;
-        case SDL_BUTTON_RIGHT:
-          rbdown = 0;
-          break;
-        }
-        break;
-      case SDL_MOUSEMOTION:
-        if (lbdown || rbdown) {
-          int currx = event.motion.x;
-          int curry = event.motion.y;
-          auto xys = line(lastx, lasty, currx, curry);
-          lastx = currx;
-          lasty = curry;
+        case SDL_MOUSEMOTION:
+          if (lbdown || rbdown) {
+            int currx = event.motion.x;
+            int curry = event.motion.y;
+            auto xys = line(lastx, lasty, currx, curry);
+            lastx = currx;
+            lasty = curry;
 
-          for (double_xy xy : xys) {
-            if (lbdown) {
-              global_b.letlive_scaled(std::move(xy), state.loc);
-            } else if (rbdown) {
-              global_b.letdie_scaled(std::move(xy), state.loc);
+            for (double_xy xy : xys) {
+              if (lbdown) {
+                global_b.letlive_scaled(std::move(xy), state.loc);
+              } else if (rbdown) {
+                global_b.letdie_scaled(std::move(xy), state.loc);
+              }
             }
           }
-        }
-        break;
-      case SDL_MOUSEWHEEL:
-        int x, y;
-        SDL_GetMouseState(&x, &y);
-        double_xy f(x, y);
+          break;
+        case SDL_MOUSEWHEEL:
+          int x, y;
+          SDL_GetMouseState(&x, &y);
+          double_xy f(x, y);
 
-        if (event.wheel.y > 0) {
-          state.zoomin(f.x, f.y);
-        } else {
-          state.zoomout(f.x, f.y);
+          if (event.wheel.y > 0) {
+            state.zoomin(f.x, f.y);
+          } else {
+            state.zoomout(f.x, f.y);
+          }
+          break;
         }
-        break;
       }
     }
 
     waiter.wait_if_fast();
-    std::cout << SDL_GetTicks() - last << std::endl;
-    last = SDL_GetTicks();
 
-    // run an update cycle if active
-    if (active)
-      global_b.run();
-
-    // draw always
+    // draw allways
     state.draw();
   }
 
