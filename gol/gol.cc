@@ -4,7 +4,7 @@
 #include <list>
 #include "../threadpool/threadpool.h"
 #include <iostream>
-#include <chrono>
+#include "Waiter.h"
 
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -74,8 +74,8 @@ struct double_xy {
   }
   double_xy(double x, double y) : x(x), y(y){};
 
+  // 0.01 because rounding often made em SLIGHTLY below the real position
   int int_x() {
-    // 0.01 because rounding often made em SLIGHTLY below the real position
     return (int(SIZEX + SIZEX * x + 0.01)) / 2;
   }
   int int_y() { return (int(SIZEY - SIZEY * y + 0.01)) / 2; }
@@ -285,7 +285,7 @@ struct Board {
   }
 };
 
-Board global_b{};
+Board global_b;
 
 const char *vertexshader = "#version 150\n"
                            "in vec2 position;\n"
@@ -517,7 +517,7 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  GLstate state{};
+  GLstate state;
 
   std::ofstream logfile;
   logfile.open("log");
@@ -526,13 +526,13 @@ int main(int argc, const char *argv[]) {
     return 0;
   }
 
-  Uint32 time_now = SDL_GetTicks();
-  Uint32 goal_time = 0;
   bool active = 1;
   int lastx = 0, lasty = 0;
   bool lbdown = 0;
   bool rbdown = 0;
   SDL_Event event;
+  Waiter waiter(16);
+  unsigned int last;
   while (true) {
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -546,11 +546,12 @@ int main(int argc, const char *argv[]) {
           active = !active;
           break;
         case SDLK_i:
-          if (FPSMAX > 1 && FPSMAX <= 10) {
+          if (FPSMAX > 2 && FPSMAX <= 10) {
             FPSMAX--;
           } else if (FPSMAX > 10) {
             FPSMAX = FPSMAX * 8 / 10;
           }
+          waiter.set_ms_tick_length(1000/FPSMAX);
           break;
         case SDLK_o:
           if (FPSMAX <= 10) {
@@ -558,6 +559,7 @@ int main(int argc, const char *argv[]) {
           } else if (FPSMAX > 10) {
             FPSMAX = FPSMAX * 12 / 10;
           }
+          waiter.set_ms_tick_length(1000/FPSMAX);
           break;
         case SDLK_d:
           for (auto &i : global_b.aliveactive) {
@@ -642,19 +644,9 @@ int main(int argc, const char *argv[]) {
       }
     }
 
-#if 1
-    long int ticksinframe = SDL_GetTicks() - time_now;
-    std::cout << "Ticks: " << ticksinframe << ". Wanted frames/s: " << FPSMAX << ". Gotten frames/s: " << (ticksinframe ? 1000/ticksinframe : 0) << "." << (time_now+1000/FPSMAX > SDL_GetTicks() ? " SKIPPED." : "") << std::endl;
-#endif
-    // FPS management, or rather just waits so it is not too fast
-    goal_time = time_now + 1000 / FPSMAX;
-    time_now = SDL_GetTicks();
-
-    // Continue immediately if we're too late, and we missed the goal,
-    // otherwise wait for it
-    if (goal_time > time_now) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(goal_time - time_now));
-    }
+    waiter.wait_if_fast();
+    std::cout << SDL_GetTicks() - last << std::endl;
+    last = SDL_GetTicks();
 
     // run an update cycle if active
     if (active)
