@@ -540,7 +540,7 @@ int main(int argc, const char *argv[]) {
         return 0;
       case SDL_KEYUP:
         switch (event.key.keysym.sym) {
-        case SDLK_ESCAPE:
+        case SDLK_q:
           return 0;
         case SDLK_SPACE:
           active = !active;
@@ -648,7 +648,7 @@ int main(int argc, const char *argv[]) {
 
     // Continue immediately if we're too late, and we missed the goal,
     // otherwise wait for it
-    if (goaltime > time_now) {
+    if (goal_time > time_now) {
       std::this_thread::sleep_for(std::chrono::milliseconds(goal_time - time_now));
     }
 
