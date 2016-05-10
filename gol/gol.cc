@@ -19,7 +19,7 @@
 int SIZEX = 1000;
 int SIZEY = 600;
 
-static int FPSMAX = 200;
+static unsigned int FPSMAX = 60;
 static const int NRTHREADS = 64;
 
 static std::mutex fliplock;
@@ -528,11 +528,15 @@ int main(int argc, const char *argv[]) {
 
   bool active = 1;
   std::thread boardthread([&active]() {
+    unsigned int lastfps = FPSMAX;
     Waiter runwaiter(1000 / FPSMAX);
     while (true) {
       if (active) {
         std::unique_lock<std::mutex> f(fliplock);
         global_b.run();
+      }
+      if (lastfps != FPSMAX) {
+        runwaiter.set_ms_tick_length(1000 / FPSMAX);
       }
       runwaiter.wait_if_fast();
     }
