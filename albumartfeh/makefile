@@ -2,4 +2,4 @@
 all:
 
 install:
-		sudo cp albumart.py /usr/local/bin/albumart
+		cp albumart.py /usr/local/bin/albumart
