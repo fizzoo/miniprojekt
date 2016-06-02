@@ -1,4 +1,5 @@
 import System.Directory
+import System.Environment
 import Control.Monad
 
 isParent :: FilePath -> Bool
@@ -16,5 +17,8 @@ recDir path = do
 
 main :: IO ()
 main = do
-    cwd <- getCurrentDirectory
-    recDir cwd
+    args <- getArgs
+    dir <- case args of
+          [str] -> canonicalizePath str
+          _ -> getCurrentDirectory
+    recDir dir
