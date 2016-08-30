@@ -59,8 +59,8 @@
   (loop
      with lasterr = 100000
      for denom from 1 to 10000
-     do (if (< (error-of-denom-list list denom) lasterr)
-            (progn (format t "denominator ~a, error ~a~%" denom (error-of-denom-list list denom))
-                   (setf lasterr (error-of-denom-list list denom))))))
+     do (cond ((< (error-of-denom-list list denom) lasterr)
+               (format t "denominator ~a, error ~a~%" denom (error-of-denom-list list denom))
+               (setf lasterr (error-of-denom-list list denom))))))
 
 ;;; Could make a "lowest with all digits correct" sort of thing. TODO.
