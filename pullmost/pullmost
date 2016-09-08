@@ -1,5 +1,7 @@
 #!/bin/zsh
 
+# Try to pull a directory, guarding against it not being a directory,
+# it not being git, it having unstaged or unpushed changes, etc
 trypull(){
     if [ ! -d $1 ]; then
         return                  # Not even a dir.
@@ -9,10 +11,13 @@ trypull(){
     if [ -d .git ]; then
         echo
         echo "$1:"
+
         CHANGED=$(git diff-index --name-only HEAD --)
-        if [ ! -z $CHANGED ]; then
+        UNPUSHED=$(git log origin..)
+        if [[ ! -z $CHANGED || ! -z $UNPUSHED ]]; then
             git status
         fi
+
         git pull
     fi
     cd ..
