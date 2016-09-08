@@ -1,0 +1,21 @@
+#!/bin/zsh
+
+trypull(){
+    if [ ! -d $1 ]
+    then
+        return
+    fi
+
+    cd $1
+    if [ -d .git ]
+    then
+        git pull
+    fi
+    cd ..
+}
+
+
+for i in *
+do
+    trypull $i
+done
