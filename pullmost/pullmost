@@ -1,21 +1,24 @@
 #!/bin/zsh
 
 trypull(){
-    if [ ! -d $1 ]
-    then
-        return
+    if [ ! -d $1 ]; then
+        return                  # Not even a dir.
     fi
 
     cd $1
-    if [ -d .git ]
-    then
+    if [ -d .git ]; then
+        echo
+        echo "$1:"
+        CHANGED=$(git diff-index --name-only HEAD --)
+        if [ ! -z $CHANGED ]; then
+            git status
+        fi
         git pull
     fi
     cd ..
 }
 
 
-for i in *
-do
+for i in *; do
     trypull $i
 done
