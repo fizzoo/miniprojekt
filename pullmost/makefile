@@ -1,5 +1,5 @@
 all:
-	echo "'install' only"
+	echo "'install' only, probably as root or sudo"
 
 install:
 	cp pullmost /usr/local/bin/

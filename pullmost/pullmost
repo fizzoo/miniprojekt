@@ -13,7 +13,7 @@ trypull(){
         echo "$1:"
 
         CHANGED=$(git diff-index --name-only HEAD --)
-        UNPUSHED=$(git log origin..)
+        UNPUSHED=$(git log ORIG_HEAD..)
         if [[ ! -z $CHANGED || ! -z $UNPUSHED ]]; then
             git status
         fi
