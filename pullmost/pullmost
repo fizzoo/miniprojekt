@@ -1,29 +1,52 @@
 #!/bin/zsh
 
-# Try to pull a directory, guarding against it not being a directory,
-# it not being git, it having unstaged or unpushed changes, etc
+checkstatuspull(){
+  grep "nothing to commit, working tree clean" /tmp/pullmost-status >/dev/null
+  statusret=$?
+  grep "Already up-to-date." /tmp/pullmost-pull >/dev/null
+
+  if [[ $statusret == 0 && $? == 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+
+# Try to pull a directory, and then print status.
+# Does nothing if it is not a directory, or the directory is not git.
 trypull(){
-    if [ ! -d $1 ]; then
-        return                  # Not even a dir.
+  if [ ! -d $1 ]; then
+    return                  # Not even a dir.
+  fi
+
+  cd $1
+  if [ -d .git ]; then
+    git pull 2>/tmp/pullmost-pull >/tmp/pullmost-pull
+    git status 2>/tmp/pullmost-status >/tmp/pullmost-status
+
+    checkstatuspull
+
+    if [[ $? == 0 ]];
+    then
+      tput setab 2
+      echo -e "$1! \x1b[K"
+      tput op
+    else
+      tput setab 1
+      echo -e "$1: \x1b[K"
+      tput op
+      cat /tmp/pullmost-pull
+      echo
+      cat /tmp/pullmost-status
+      echo
     fi
 
-    cd $1
-    if [ -d .git ]; then
-        echo
-        echo "$1:"
-
-        CHANGED=$(git diff-index --name-only HEAD --)
-        UNPUSHED=$(git log ORIG_HEAD..)
-        if [[ ! -z $CHANGED || ! -z $UNPUSHED ]]; then
-            git status
-        fi
-
-        git pull
-    fi
-    cd ..
+  fi
+  cd ..
 }
 
 
 for i in *; do
-    trypull $i
+  trypull $i
 done
