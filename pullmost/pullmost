@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 checkstatuspull(){
-  grep "nothing to commit, working tree clean" /tmp/pullmost-status >/dev/null
+  grep "nothing to commit, " /tmp/pullmost-status >/dev/null
   statusret=$?
   grep "Already up-to-date." /tmp/pullmost-pull >/dev/null
 
