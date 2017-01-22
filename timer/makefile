@@ -1,7 +1,7 @@
 all: haskell
 
 install: haskell
-	cp stopwatch /usr/local/bin/
+	install stopwatch /usr/local/bin/
 
 haskell:
 	ghc stopwatch.hs
