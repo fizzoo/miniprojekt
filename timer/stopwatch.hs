@@ -4,7 +4,8 @@ import           Control.Exception    (finally, throwTo)
 import           Data.Time.Clock      (NominalDiffTime, UTCTime, diffUTCTime,
                                        getCurrentTime)
 import           System.Exit          (ExitCode (..))
-import           System.IO            (BufferMode (..), hSetBuffering, stdin)
+import           System.IO            (BufferMode (..), hSetBuffering, stdin,
+                                       stdout)
 import           System.Posix.Signals (Handler (..), installHandler,
                                        keyboardSignal)
 
@@ -42,6 +43,7 @@ main :: IO ()
 main = do
   tid <- myThreadId
   start <- getCurrentTime
+  hSetBuffering stdout LineBuffering
   _ <- forkIO $ exitOnQ tid
   _ <- installHandler keyboardSignal (Catch $ end tid) Nothing
   finally (ticker start 0.0) (finalPrint start)
