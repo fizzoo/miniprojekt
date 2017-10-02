@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 #define NRINPUTS 8
 #define BUFFERSIZE 4096
@@ -27,46 +28,41 @@ void redirect_err_to(char *filename) {
   close(fd);
 }
 
-/**
- * Distance to first '\n' or '\0'.
- */
-int linelen(char *p) {
-  int res = 0;
-  while (*p != '\n' && *p != '\0') {
-    ++p;
-    ++res;
-  }
-  return res;
-}
+struct buf_statistics {
+  int lines[NRINPUTS];
+  int letters[NRINPUTS];
+  int avglen[NRINPUTS];
+  int found_cmds;
+};
 
 /**
- * Average line length
+ * Create a buf_statistics with the number of lines and letters of each of the commands of the input buffer.
  */
-int avg_linelen(char *p){
-  int sum = 0;
-  int lines = 0;
-  while (*p != '\0' && *p != COMMAND_END){
-    if (*p == '\n'){
-      ++lines;
+struct buf_statistics get_statistics(char *buf){
+  struct buf_statistics stats;
+  memset(&stats, 0, sizeof(stats));
+  int cur_cmd = 0;
+  char c;
+
+  while ((c = *buf++) != '\0'){
+    if (c == COMMAND_END){
+      ++cur_cmd;
+      stats.found_cmds = cur_cmd;
+    } else if (c == '\n'){
+      ++stats.lines[cur_cmd];
     } else {
-      ++sum;
+      ++stats.letters[cur_cmd];
     }
-    ++p;
   }
-  if (*(p-2) == '\n') --lines;  /* \n right before \0 */
-  if (lines < 1) lines = 1;
-  mvprintw(0, 0, "%d,%d,%d\n", sum, lines, sum/lines);
-  return sum/lines;
-}
 
-/**
- * Pointer to first null character in array.
- */
-char *firstnull(char *p) {
-  while (*p != '\0') {
-    ++p;
+  for (int i = 0; i < NRINPUTS; ++i){
+    if (stats.lines[i] < 1){
+      stats.lines[i] = 1;
+    }
+    stats.avglen[i] = stats.letters[i] / stats.lines[i];
   }
-  return p;
+
+  return stats;
 }
 
 /**
@@ -115,9 +111,17 @@ void get_status(char *buf) {
  * Writes the status information in buf, formatted for the screen.
  */
 void write_status(char *buf, int maxx, int maxy) {
-  int y = maxy / 2 - NRINPUTS;
-  int startx = maxx / 2 - avg_linelen(buf) / 2;
+  struct buf_statistics stats = get_statistics(buf);
+
+  int total_lines = 0;
+  for (int i = 0; i < stats.found_cmds; ++i){
+    total_lines += stats.lines[i] + 1;
+  }
+
+  int cur_cmd = 0;
   int x;
+  int y = maxy / 2 - total_lines / 2;
+  int startx = maxx / 2 - stats.avglen[cur_cmd] / 2;
 
   while (*buf != '\0') {
     if (*buf == '\n') {
@@ -129,7 +133,11 @@ void write_status(char *buf, int maxx, int maxy) {
       // End of one command, recalculate width.
       ++buf;
       ++y;
-      startx = maxx / 2 - avg_linelen(buf) / 2;
+      ++cur_cmd;
+      if (cur_cmd >= stats.found_cmds){
+        break;
+      }
+      startx = maxx / 2 - stats.avglen[cur_cmd] / 2;
       continue;
     }
     x = startx;
