@@ -14,6 +14,8 @@ char buffer[BUFFERSIZE];
 char *commands[NRINPUTS];
 bool running = 1;
 
+static char COMMAND_END = 7;
+
 /**
  * Redirects stderr to the file specified by filename.
  */
@@ -35,6 +37,26 @@ int linelen(char *p) {
     ++res;
   }
   return res;
+}
+
+/**
+ * Average line length
+ */
+int avg_linelen(char *p){
+  int sum = 0;
+  int lines = 0;
+  while (*p != '\0' && *p != COMMAND_END){
+    if (*p == '\n'){
+      ++lines;
+    } else {
+      ++sum;
+    }
+    ++p;
+  }
+  if (*(p-2) == '\n') --lines;  /* \n right before \0 */
+  if (lines < 1) lines = 1;
+  mvprintw(0, 0, "%d,%d,%d\n", sum, lines, sum/lines);
+  return sum/lines;
 }
 
 /**
@@ -83,7 +105,7 @@ void get_status(char *buf) {
       continue;
     }
 
-    buf = read_command(commands[i], buf, 7);
+    buf = read_command(commands[i], buf, COMMAND_END);
   }
 
   *buf = '\0';
@@ -94,7 +116,7 @@ void get_status(char *buf) {
  */
 void write_status(char *buf, int maxx, int maxy) {
   int y = maxy / 2 - NRINPUTS;
-  int startx = maxx / 2 - linelen(buf) / 2;
+  int startx = maxx / 2 - avg_linelen(buf) / 2;
   int x;
 
   while (*buf != '\0') {
@@ -103,16 +125,16 @@ void write_status(char *buf, int maxx, int maxy) {
       ++y;
       continue;
     }
-    if (*buf == 7) {
+    if (*buf == COMMAND_END) {
       // End of one command, recalculate width.
       ++buf;
       ++y;
-      startx = maxx / 2 - linelen(buf) / 2;
+      startx = maxx / 2 - avg_linelen(buf) / 2;
       continue;
     }
     x = startx;
 
-    while (*buf != '\0' && *buf != '\n' && *buf != 7) {
+    while (*buf != '\0' && *buf != '\n' && *buf != COMMAND_END) {
       if (y >= 0 && y < maxy && x >= 0 && x < maxx) {
         mvaddch(y, x, *buf);
       }
@@ -135,9 +157,16 @@ void doer() {
     break;
   case 'w':
     if (!commands[3]) {
-      commands[3] = "nmcli d wifi";
+      commands[3] = "wpa_cli -i wlp4s0 status";
     } else {
       commands[3] = NULL;
+    }
+    break;
+  case 'i':
+    if (!commands[4]) {
+      commands[4] = "ip a";
+    } else {
+      commands[4] = NULL;
     }
     break;
   }
