@@ -6,6 +6,7 @@ statusy:
 
 install: statusy
 	cp statusy /usr/local/bin/statusy
+	chmod a+X /usr/local/bin/statusy
 
 clean:
 	rm statusy
