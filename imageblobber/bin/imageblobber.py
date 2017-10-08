@@ -37,7 +37,7 @@ def place_circle(img, xy, color, radius=16):
     cv2.circle(img, xy, radius, color, thickness=-1)
 
 
-def blob(infile, outfile, nr_blobs, radius):
+def blob(infile, outfile, nr_blobs, radius, count_tries):
     """Do the blobbing thing.
 
     Read infile, create nr_blobs blobs of radius radius that make the image
@@ -53,8 +53,11 @@ def blob(infile, outfile, nr_blobs, radius):
     tries = 0
     successes = 0
     bar = tqdm.tqdm(total=nr_blobs)
-    while successes < nr_blobs:
+    while tries < nr_blobs if count_tries else successes < nr_blobs:
         tries += 1
+        if count_tries:
+            bar.update(1)
+
         rngcolor = get_random_color(gt)
         x, y = get_rng_index(gt)
 
@@ -79,7 +82,8 @@ def blob(infile, outfile, nr_blobs, radius):
         if a < b:
             place_circle(out, (y, x), np_to_color(rngcolor), radius)
             successes += 1
-            bar.update(1)
+            if not count_tries:
+                bar.update(1)
 
     bar.close()
 
@@ -92,13 +96,16 @@ def main():
     parser = argparse.ArgumentParser(description='Blobify an image.')
     parser.add_argument('infile', help='File name of input')
     parser.add_argument('outfile', help='File name of output')
-    parser.add_argument('-nr', type=int, default=1000, help="""Number of blobs
-        (execution time scales exponentially or so with this)""")
+    parser.add_argument('-nr', type=int, default=1000,
+                        help="""Number of blobs/tries (execution time scales
+        exponentially or so with this)""")
+    parser.add_argument('-tries', action='store_true',
+                        help='Use tries instead in -nr')
     parser.add_argument('-r', type=int, default=16, help='Radius of blobs')
 
     args = parser.parse_args()
 
-    blob(args.infile, args.outfile, args.nr, args.r)
+    blob(args.infile, args.outfile, args.nr, args.r, args.tries)
 
 
 if __name__ == '__main__':
