@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 # Note: was faster to do one full norm each iteration instead of masked
-# cv.norm. Norming both numpy-sliced was even slower, due to more copies.
+# cv.norm. Norming both numpy-sliced was even faster (unlike how it seemed in
+# my early tests, weirdly), and should obviously scale better with larger
+# images.
 
 import numpy as np
 import cv2
@@ -44,6 +46,8 @@ def blob(infile, outfile, nr_blobs, radius):
     # Ground truth
     gt = cv2.imread(infile)
 
+    print("Infile", infile, "size:", gt.shape)
+
     # Two for "double buffering" (Strictly speaking we don't use it since we
     # need to use the newly drawn info, so always copy)
     new = np.zeros(gt.shape, dtype=gt.dtype)
@@ -52,7 +56,6 @@ def blob(infile, outfile, nr_blobs, radius):
     assert(gt.shape == new.shape)
     assert(gt.shape == old.shape)
 
-    olderr = 99999999
     tries = 0
     successes = 0
     bar = tqdm.tqdm(total=nr_blobs)
@@ -64,10 +67,20 @@ def blob(infile, outfile, nr_blobs, radius):
         place_circle(new, (y, x), np_to_color(rngcolor), radius)
         place_circle(mask, (y, x), 1, radius)
 
-        newerr = cv2.norm(new, gt)
-        if newerr < olderr:
+        r = radius
+        minx = max(x-r, 0)
+        maxx = min(x+r, gt.shape[0]-1)
+        miny = max(y-r, 0)
+        maxy = min(y+r, gt.shape[1]-1)
+
+        a = cv2.norm(new[minx:maxx, miny:maxy],
+                     gt[minx:maxx, miny:maxy],
+                     cv2.NORM_L1)
+        b = cv2.norm(old[minx:maxx, miny:maxy],
+                     gt[minx:maxx, miny:maxy],
+                     cv2.NORM_L1)
+        if a < b:
             old = new.copy()
-            olderr = newerr
             successes += 1
             bar.update(1)
         else:
