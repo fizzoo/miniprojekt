@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Note: was faster to do one full norm each iteration instead of masked
+# cv.norm. Norming both numpy-sliced was even slower, due to more copies.
+
 import numpy as np
 import cv2
 import argparse
@@ -43,12 +46,13 @@ def blob(infile, outfile, nr_blobs, radius):
 
     # Two for "double buffering" (Strictly speaking we don't use it since we
     # need to use the newly drawn info, so always copy)
-    new1 = np.zeros(gt.shape, dtype=gt.dtype)
-    new2 = new1.copy()
+    new = np.zeros(gt.shape, dtype=gt.dtype)
+    old = new.copy()
 
-    assert(gt.shape == new1.shape)
-    assert(gt.shape == new2.shape)
+    assert(gt.shape == new.shape)
+    assert(gt.shape == old.shape)
 
+    olderr = 99999999
     successes = 0
     bar = tqdm.tqdm(total=nr_blobs)
     while True:
@@ -56,29 +60,30 @@ def blob(infile, outfile, nr_blobs, radius):
         x, y = get_rng_index(gt)
 
         mask = np.zeros((gt.shape[0], gt.shape[1]), dtype=np.uint8)
-        place_circle(new1, (y, x), np_to_color(rngcolor), radius)
+        place_circle(new, (y, x), np_to_color(rngcolor), radius)
         place_circle(mask, (y, x), 1, radius)
 
-        a = cv2.norm(new1, gt, mask=mask)
-        b = cv2.norm(new2, gt, mask=mask)
-        if a < b:
-            new2 = new1.copy()
+        newerr = cv2.norm(new, gt)
+        if newerr < olderr:
+            old = new.copy()
+            olderr = newerr
             successes += 1
             bar.update(1)
         else:
-            new1 = new2.copy()
+            new = old.copy()
 
         if successes >= nr_blobs:
             break
 
-    cv2.imwrite(outfile, new1)
+    cv2.imwrite(outfile, new)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Blobify an image.')
     parser.add_argument('infile', help='File name of input')
     parser.add_argument('outfile', help='File name of output')
-    parser.add_argument('-nr', type=int, default=1000, help='Number of blobs')
+    parser.add_argument('-nr', type=int, default=1000, help="""Number of blobs
+        (execution time scales exponentially or so with this)""")
     parser.add_argument('-r', type=int, default=16, help='Radius of blobs')
 
     args = parser.parse_args()
