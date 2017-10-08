@@ -53,6 +53,7 @@ def blob(infile, outfile, nr_blobs, radius):
     assert(gt.shape == old.shape)
 
     olderr = 99999999
+    tries = 0
     successes = 0
     bar = tqdm.tqdm(total=nr_blobs)
     while True:
@@ -72,10 +73,15 @@ def blob(infile, outfile, nr_blobs, radius):
         else:
             new = old.copy()
 
+        tries += 1
         if successes >= nr_blobs:
             break
 
+    bar.close()
+
     cv2.imwrite(outfile, new)
+
+    print("Finished! Wrote", outfile, "after", tries, "tries.")
 
 
 def main():
@@ -89,6 +95,7 @@ def main():
     args = parser.parse_args()
 
     blob(args.infile, args.outfile, args.nr, args.r)
+
 
 if __name__ == '__main__':
     main()
