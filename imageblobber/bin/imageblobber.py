@@ -48,51 +48,42 @@ def blob(infile, outfile, nr_blobs, radius):
 
     print("Infile", infile, "size:", gt.shape)
 
-    # Two for "double buffering" (Strictly speaking we don't use it since we
-    # need to use the newly drawn info, so always copy)
-    new = np.zeros(gt.shape, dtype=gt.dtype)
-    old = new.copy()
-
-    assert(gt.shape == new.shape)
-    assert(gt.shape == old.shape)
+    out = np.zeros(gt.shape, dtype=gt.dtype)
 
     tries = 0
     successes = 0
     bar = tqdm.tqdm(total=nr_blobs)
-    while True:
+    while successes < nr_blobs:
+        tries += 1
         rngcolor = get_random_color(gt)
         x, y = get_rng_index(gt)
 
-        mask = np.zeros((gt.shape[0], gt.shape[1]), dtype=np.uint8)
-        place_circle(new, (y, x), np_to_color(rngcolor), radius)
-        place_circle(mask, (y, x), 1, radius)
+        minx = max(x-radius, 0)
+        maxx = min(x+radius, gt.shape[0]-1)
+        miny = max(y-radius, 0)
+        maxy = min(y+radius, gt.shape[1]-1)
 
-        r = radius
-        minx = max(x-r, 0)
-        maxx = min(x+r, gt.shape[0]-1)
-        miny = max(y-r, 0)
-        maxy = min(y+r, gt.shape[1]-1)
+        # Test patch for drawing on without ruining the out image
+        test_patch = out[minx:maxx, miny:maxy].copy()
 
-        a = cv2.norm(new[minx:maxx, miny:maxy],
+        # x-minx, for example, is simply r unless x < radius, then x
+        place_circle(test_patch, (y-miny, x-minx), np_to_color(rngcolor),
+                     radius)
+
+        a = cv2.norm(test_patch,
                      gt[minx:maxx, miny:maxy],
                      cv2.NORM_L1)
-        b = cv2.norm(old[minx:maxx, miny:maxy],
+        b = cv2.norm(out[minx:maxx, miny:maxy],
                      gt[minx:maxx, miny:maxy],
                      cv2.NORM_L1)
         if a < b:
-            old = new.copy()
+            place_circle(out, (y, x), np_to_color(rngcolor), radius)
             successes += 1
             bar.update(1)
-        else:
-            new = old.copy()
-
-        tries += 1
-        if successes >= nr_blobs:
-            break
 
     bar.close()
 
-    cv2.imwrite(outfile, new)
+    cv2.imwrite(outfile, out)
 
     print("Finished! Wrote", outfile, "after", tries, "tries.")
 
