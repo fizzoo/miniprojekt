@@ -3,7 +3,7 @@
 # Note: was faster to do one full norm each iteration instead of masked
 # cv.norm. Norming both numpy-sliced was even faster (unlike how it seemed in
 # my early tests, weirdly), and should obviously scale better with larger
-# images.
+# images. Also allows us to only copy that patch.
 
 import numpy as np
 import cv2
