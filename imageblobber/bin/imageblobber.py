@@ -72,10 +72,10 @@ def blob(infile, outfile, nr_blobs, radius):
 
         a = cv2.norm(test_patch,
                      gt[minx:maxx, miny:maxy],
-                     cv2.NORM_L1)
+                     cv2.NORM_L2)
         b = cv2.norm(out[minx:maxx, miny:maxy],
                      gt[minx:maxx, miny:maxy],
-                     cv2.NORM_L1)
+                     cv2.NORM_L2)
         if a < b:
             place_circle(out, (y, x), np_to_color(rngcolor), radius)
             successes += 1
