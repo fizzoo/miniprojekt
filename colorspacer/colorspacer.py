@@ -20,9 +20,13 @@ def downscale(img, wantedpix):
 def vis(imgname, wantedpix):
     """Visualize the img by plotting its rbg space."""
     img = cv2.imread(imgname)
+    print("Infile", imgname, "has shape", img.shape)
     small = downscale(img, wantedpix)
 
     cat = np.concatenate(small)/255
+    # OpenCV uses BGR!
+    cat = cat[:, [2, 1, 0]]
+
     r = cat[:, 0]
     g = cat[:, 1]
     b = cat[:, 2]
