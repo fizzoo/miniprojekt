@@ -3,7 +3,7 @@
 checkstatuspull(){
   grep "nothing to commit, " /tmp/pullmost-status >/dev/null
   statusret=$?
-  grep "Already up-to-date." /tmp/pullmost-pull >/dev/null
+  grep "Already up to date." /tmp/pullmost-pull >/dev/null
 
   if [[ $statusret == 0 && $? == 0 ]]; then
     return 0
