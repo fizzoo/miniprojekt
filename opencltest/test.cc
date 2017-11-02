@@ -82,6 +82,8 @@ int main() {
               << "\n";
     std::cerr << "max workgroup size: "
               << dev.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << "\n";
+    std::cerr << "compute units: "
+              << dev.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << "\n";
     std::cerr << std::endl;
   }
 }
