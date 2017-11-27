@@ -48,10 +48,14 @@ trypull () {
     rm $pull $stat
 }
 
-# cd to arg 1 if given
-if [[ ! -z $1 ]]; then; cd $1; fi
+if [[ $# == 0 ]]; then
+    printf "usage: $0 dir1 dir2 ...\n"
+    printf "better usage: parallel $0 ::: * \n"
+    exit 1
+fi
 
-for i in *; do
+# Run on all the args.
+for i in $@; do
     # Do nothing if it is not a directory, or the directory is not git.
     if [[ ! -d $i/.git ]]; then; continue; fi
 
