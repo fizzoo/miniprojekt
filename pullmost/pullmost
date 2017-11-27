@@ -51,6 +51,10 @@ trypull () {
   cd ..
 }
 
+if [[ ! -z $1 ]]
+then
+  cd $1
+fi
 
 for i in *; do
   trypull $i
