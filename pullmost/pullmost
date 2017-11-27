@@ -53,10 +53,7 @@ then
 fi
 
 for i in *; do
-    if [[ ! -d $i/.git ]];
-    then
-        return                  # Not even a dir/no git
-    fi
+    if [[ ! -d $i/.git ]]; then; continue; fi # Not even a dir/no git
 
     cd $i
     trypull $i
