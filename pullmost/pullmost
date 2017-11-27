@@ -1,16 +1,7 @@
 #!/bin/zsh
 
-checkstatuspull () {
-    grep "nothing to commit, " /tmp/pullmost-status >/dev/null
-    statusret=$?
-    grep "Already up to date." /tmp/pullmost-pull >/dev/null
-
-    if [[ $statusret == 0 && $? == 0 ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
+TMPPULL=/tmp/pullmost-pull
+TMPSTAT=/tmp/pullmost-status
 
 # arg 2 is color to tput, arg 1 string
 pprint () {
@@ -23,39 +14,48 @@ pprint () {
 }
 
 # Try to pull a directory, and then print status.
-# Does nothing if it is not a directory, or the directory is not git.
+# Should be in the right directory when calling this func.
 trypull () {
-    if [[ -z $(git branch -r) ]]
-    then
+    # Check if it has no remote tracking branches, nothing to do in
+    # that case.
+    if [[ -z $(git branch -r) ]]; then
         return
     fi
 
-    git pull 2>/tmp/pullmost-pull >/tmp/pullmost-pull
-    git status 2>/tmp/pullmost-status >/tmp/pullmost-status
+    # basename of dir
+    local cwd=${PWD##*/}
+    local pull=$TMPPULL-$cwd
+    local stat=$TMPSTAT-$cwd
 
-    checkstatuspull
+    { git pull 2>&1 } > $pull
+    grep "Already up to date." $pull >/dev/null
+    local s1=$?
 
-    if [[ $? == 0 ]];
-    then
-        pprint $1! 2
+    { git status 2>&1 } > $stat
+    grep "nothing to commit, " $stat >/dev/null
+    local s2=$?
+
+    if [[ $s1 == 0 && $s2 == 0 ]]; then
+        pprint "${cwd}!" 2
     else
-        pprint $1: 1
-        cat /tmp/pullmost-pull
+        pprint "${cwd}:" 1
+        cat $pull
         echo
-        cat /tmp/pullmost-status
+        cat $stat
         echo
     fi
+
+    rm $pull $stat
 }
 
-if [[ ! -z $1 ]]
-then
-    cd $1
-fi
+# cd to arg 1 if given
+if [[ ! -z $1 ]]; then; cd $1; fi
 
 for i in *; do
-    if [[ ! -d $i/.git ]]; then; continue; fi # Not even a dir/no git
+    # Do nothing if it is not a directory, or the directory is not git.
+    if [[ ! -d $i/.git ]]; then; continue; fi
 
     cd $i
-    trypull $i
+    trypull
     cd ..
 done
