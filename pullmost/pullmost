@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-checkstatuspull(){
+checkstatuspull () {
   grep "nothing to commit, " /tmp/pullmost-status >/dev/null
   statusret=$?
   grep "Already up to date." /tmp/pullmost-pull >/dev/null
@@ -12,10 +12,19 @@ checkstatuspull(){
   fi
 }
 
+# arg 2 is color to tput, arg 1 string
+pprint () {
+  tput bold
+  tput setab $2
+  printf "%-80s" $1
+  tput op
+  tput sgr0
+  printf "\n"
+}
 
 # Try to pull a directory, and then print status.
 # Does nothing if it is not a directory, or the directory is not git.
-trypull(){
+trypull () {
   if [ ! -d $1 ]; then
     return                  # Not even a dir.
   fi
@@ -29,13 +38,9 @@ trypull(){
 
     if [[ $? == 0 ]];
     then
-      tput setab 2
-      echo -e "$1! \x1b[K"
-      tput op
+      pprint $1! 2
     else
-      tput setab 1
-      echo -e "$1: \x1b[K"
-      tput op
+      pprint $1: 1
       cat /tmp/pullmost-pull
       echo
       cat /tmp/pullmost-status
