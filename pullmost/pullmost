@@ -1,36 +1,35 @@
 #!/bin/zsh
 
 checkstatuspull () {
-  grep "nothing to commit, " /tmp/pullmost-status >/dev/null
-  statusret=$?
-  grep "Already up to date." /tmp/pullmost-pull >/dev/null
+    grep "nothing to commit, " /tmp/pullmost-status >/dev/null
+    statusret=$?
+    grep "Already up to date." /tmp/pullmost-pull >/dev/null
 
-  if [[ $statusret == 0 && $? == 0 ]]; then
-    return 0
-  else
-    return 1
-  fi
+    if [[ $statusret == 0 && $? == 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # arg 2 is color to tput, arg 1 string
 pprint () {
-  tput bold
-  tput setab $2
-  printf "%-80s" $1
-  tput op
-  tput sgr0
-  printf "\n"
+    tput bold
+    tput setab $2
+    printf "%-80s" $1
+    tput op
+    tput sgr0
+    printf "\n"
 }
 
 # Try to pull a directory, and then print status.
 # Does nothing if it is not a directory, or the directory is not git.
 trypull () {
-  if [ ! -d $1 ]; then
-    return                  # Not even a dir.
-  fi
+    if [[ -z $(git branch -r) ]]
+    then
+        return
+    fi
 
-  cd $1
-  if [ -d .git ]; then
     git pull 2>/tmp/pullmost-pull >/tmp/pullmost-pull
     git status 2>/tmp/pullmost-status >/tmp/pullmost-status
 
@@ -38,24 +37,28 @@ trypull () {
 
     if [[ $? == 0 ]];
     then
-      pprint $1! 2
+        pprint $1! 2
     else
-      pprint $1: 1
-      cat /tmp/pullmost-pull
-      echo
-      cat /tmp/pullmost-status
-      echo
+        pprint $1: 1
+        cat /tmp/pullmost-pull
+        echo
+        cat /tmp/pullmost-status
+        echo
     fi
-
-  fi
-  cd ..
 }
 
 if [[ ! -z $1 ]]
 then
-  cd $1
+    cd $1
 fi
 
 for i in *; do
-  trypull $i
+    if [[ ! -d $i/.git ]];
+    then
+        return                  # Not even a dir/no git
+    fi
+
+    cd $i
+    trypull $i
+    cd ..
 done
