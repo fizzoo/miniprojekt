@@ -59,7 +59,9 @@ for i in $@; do
     # Do nothing if it is not a directory, or the directory is not git.
     if [[ ! -d $i/.git ]]; then; continue; fi
 
+    local swd=$PWD
+
     cd $i
     trypull
-    cd ..
+    cd $swd
 done
