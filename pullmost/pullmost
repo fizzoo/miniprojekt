@@ -27,7 +27,8 @@ trypull () {
     local pull=$TMPPULL-$cwd
     local stat=$TMPSTAT-$cwd
 
-    { git pull 2>&1 } > $pull
+    git fetch --all >/dev/null
+    { git merge --ff-only 2>&1 } > $pull
     grep "Already up to date." $pull >/dev/null
     local s1=$?
 
