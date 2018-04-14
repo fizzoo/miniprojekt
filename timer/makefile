@@ -10,6 +10,4 @@ cpp:
 	g++ -std=c++14 -pthread timer.cc -o timer
 
 clean:
-	rm stopwatch
-	rm stopwatch.{hi,o}
-	rm timer
+	rm -f stopwatch stopwatch.{hi,o} timer
