@@ -27,3 +27,6 @@
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
+/snek/compile_commands.json
+/mines/mines
+snek/snek
