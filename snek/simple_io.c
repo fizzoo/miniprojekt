@@ -4,10 +4,10 @@
 /* Need to change the mode to get char-by-char input, and reset to fix
    terminal later. */
 struct termios orig_termios;
-void reset_terminal_mode() {
+void reset_terminal_mode(void) {
   tcsetattr(0, TCSANOW, &orig_termios);
 }
-void set_rawer_terminal_mode() {
+void set_rawer_terminal_mode(void) {
   struct termios new_termios;
 
   /* take two copies - one for now, one for later */
@@ -25,7 +25,7 @@ void set_rawer_terminal_mode() {
 
   tcsetattr(0, TCSANOW, &new_termios);
 }
-int kbhit() {
+int kbhit(void) {
   struct timeval tv = {0L, 0L};
 
   /* Make a set of file descriptors with only stdin. */
@@ -36,7 +36,7 @@ int kbhit() {
   /* Check if fds is ready for reading currently. */
   return select(1, &fds, NULL, NULL, &tv);
 }
-int getch() {
+int getch(void) {
   int r;
   unsigned char c;
 
@@ -49,9 +49,9 @@ int getch() {
   }
 }
 
-void io_setup() { set_rawer_terminal_mode(); }
+void io_setup(void) { set_rawer_terminal_mode(); }
 
-int get_input() {
+int get_input(void) {
   if (1){
     int c = getch();
     switch (c){
