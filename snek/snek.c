@@ -3,8 +3,19 @@
 #include <stdio.h>
 #include <time.h>
 
-int main() {
-  struct game *game = game_new(8, 8);
+int main(int argc, char **argv) {
+  size_t height = 8, width = 8;
+  if (argc > 1) {
+    if (argc != 3) {
+      printf("Usage: %s height width\n", argv[0]);
+      return -1;
+    }
+
+    height = strtol(argv[1], NULL, 10);
+    width = strtol(argv[2], NULL, 10);
+  }
+
+  struct game *game = game_new(height, width);
   int inp, len;
 
   srand(time(NULL));
@@ -17,7 +28,7 @@ int main() {
     sleeplen.tv_nsec = 400000000;
     while (nanosleep(&sleeplen, &sleeplen))
       ;
-    while (inp = get_input()) {
+    while ((inp = get_input())) {
       make_turn(game, inp);
     }
     len = update(game);

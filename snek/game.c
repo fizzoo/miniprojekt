@@ -71,7 +71,7 @@ void pos_rng(struct pos *pos, size_t height, size_t width) {
 }
 
 char *game_at(struct game *game, struct pos *pos) {
-  return game->board + pos->y * game->height + pos->x;
+  return game->board + pos->y * game->width + pos->x;
 }
 int game_oob(struct game *game, struct pos *pos) {
   return (pos->x < 0) || (pos->y < 0) || (pos->x >= game->width) ||
