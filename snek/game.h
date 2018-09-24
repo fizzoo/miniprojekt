@@ -26,7 +26,7 @@ struct snake {
 
 struct game {
   size_t height, width;
-  int last_dir;
+  int last_dir, next_dir;
   char *board;
   struct snake *snake;
 };

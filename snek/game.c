@@ -80,8 +80,8 @@ int game_oob(struct game *game, struct pos *pos) {
 void game_reset(struct game *game) {
   memset(game->board, 0, game->height * game->width * sizeof(*game->board));
   struct pos pos;
-  game->last_dir = TURN_RIGHT;
-  pos_rng(&pos, game->height, game->width*2/3);
+  game->last_dir = game->next_dir = TURN_RIGHT;
+  pos_rng(&pos, game->height, game->width * 2 / 3);
   snake_start(game->snake, &pos);
   *game_at(game, snake_get_head(game->snake)) |= BOARD_SNAKE;
 
@@ -102,25 +102,33 @@ void make_turn(struct game *game, int turn) {
   case TURN_LEFT:
     if (dir != TURN_RIGHT) {
       dir = TURN_LEFT;
+    } else {
+      return;
     }
     break;
   case TURN_RIGHT:
     if (dir != TURN_LEFT) {
       dir = TURN_RIGHT;
+    } else {
+      return;
     }
     break;
   case TURN_UP:
     if (dir != TURN_DOWN) {
       dir = TURN_UP;
+    } else {
+      return;
     }
     break;
   case TURN_DOWN:
     if (dir != TURN_UP) {
       dir = TURN_DOWN;
+    } else {
+      return;
     }
     break;
   }
-  game->last_dir = dir;
+  game->next_dir = dir;
 }
 
 void add_turn(struct pos *pos, int turn) {
@@ -142,7 +150,8 @@ void add_turn(struct pos *pos, int turn) {
 
 int update(struct game *game) {
   struct pos next_pos = *snake_get_head(game->snake);
-  add_turn(&next_pos, game->last_dir);
+  add_turn(&next_pos, game->next_dir);
+  game->last_dir = game->next_dir;
   if (game_oob(game, &next_pos)) {
     return -snake_length(game->snake);
   } else {
@@ -151,7 +160,7 @@ int update(struct game *game) {
       return -snake_length(game->snake);
     } else {
       *game_at(game, &next_pos) |= BOARD_SNAKE;
-      if (v & BOARD_FOOD){
+      if (v & BOARD_FOOD) {
         /* Just ate. */
         game_rng_food(game);
       }
