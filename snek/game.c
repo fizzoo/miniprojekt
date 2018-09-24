@@ -81,7 +81,7 @@ void game_reset(struct game *game) {
   memset(game->board, 0, game->height * game->width * sizeof(*game->board));
   struct pos pos;
   game->last_dir = TURN_RIGHT;
-  pos_rng(&pos, game->height, game->width);
+  pos_rng(&pos, game->height, game->width*2/3);
   snake_start(game->snake, &pos);
   *game_at(game, snake_get_head(game->snake)) |= BOARD_SNAKE;
 
