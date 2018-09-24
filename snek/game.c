@@ -140,9 +140,8 @@ void add_turn(struct pos *pos, int turn) {
   }
 }
 
-int update(struct game *game, int command) {
+int update(struct game *game) {
   struct pos next_pos = *snake_get_head(game->snake);
-  make_turn(game, command);
   add_turn(&next_pos, game->last_dir);
   if (game_oob(game, &next_pos)) {
     return -snake_length(game->snake);

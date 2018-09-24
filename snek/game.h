@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 enum boardstatus {
   BOARD_NOTHING = 0,
   BOARD_SNAKE = 1,
@@ -12,13 +11,7 @@ enum boardstatus {
   BOARD_DEATH = 4
 };
 
-enum command {
-              TURN_LEFT = 1,
-              TURN_UP,
-              TURN_DOWN,
-              TURN_RIGHT
-};
-
+enum command { TURN_LEFT = 1, TURN_UP, TURN_DOWN, TURN_RIGHT };
 
 struct pos {
   size_t x, y;
@@ -56,6 +49,7 @@ void game_rng_food(struct game *);
 
 /* Also start */
 void game_reset(struct game *);
-int update(struct game *, int);
+void make_turn(struct game *, int);
+int update(struct game *);
 
 #endif

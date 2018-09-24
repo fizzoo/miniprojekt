@@ -11,13 +11,20 @@ int main() {
   game_reset(game);
 
   io_setup();
+  struct timespec sleeplen = {0};
+  print_game(game);
   while (1) {
-    print_game(game);
-    inp = get_input();
-    len = update(game, inp);
+    sleeplen.tv_nsec = 400000000;
+    while (nanosleep(&sleeplen, &sleeplen))
+      ;
+    while (inp = get_input()) {
+      make_turn(game, inp);
+    }
+    len = update(game);
     if (len < 0) {
       printf("\n\nYOU LOSE!\nScore: %d\n", -len);
       break;
     }
+    print_game(game);
   }
 }

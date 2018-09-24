@@ -52,7 +52,7 @@ int getch(void) {
 void io_setup(void) { set_rawer_terminal_mode(); }
 
 int get_input(void) {
-  if (1){
+  if (kbhit()){
     int c = getch();
     switch (c){
     case 'h':
