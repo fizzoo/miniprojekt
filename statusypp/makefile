@@ -7,6 +7,3 @@ all: statusy
 
 
 statusy: statusy.cc
-
-clean:
-	rm -f
