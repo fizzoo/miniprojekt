@@ -59,6 +59,33 @@ string Exec(const char *cmd) {
   return result;
 }
 
+class Command {
+public:
+  bool active = true;
+  char toggle_key = 0;
+  string command_string;
+  Style style;
+  optional<string> MaybeExec() {
+    if (!active) {
+      return {};
+    }
+    return ::Exec(command_string.c_str());
+  }
+  Command(string command_string_, Style style_, char toggle_key_ = 0)
+      : command_string(command_string_), style(style_) {
+    if (toggle_key_ != 0) {
+      active = false;
+      toggle_key = toggle_key_;
+    }
+  }
+};
+
+class State {
+public:
+  bool should_exit = false;
+  vector<Command> commands;
+};
+
 // Prints the entire str (which may be multiline), such that each new
 // line still starts on column startx. Returns the number of the next
 // empty line. The meaning of x depends on the style.
@@ -90,22 +117,58 @@ int PrintBuf(int starty, int x, const string &str, Style stl) {
   return starty;
 }
 
+int GetKeyOrWait() {
+  int c = getch();
+  switch (c) {
+  case ERR:
+    return 0;
+  default:
+    return c;
+  }
+}
+
+constexpr char Ctrl(char c) { return c & 31; }
+
+void ActOnKey(State *state, int key) {
+  switch (key) {
+  case 'q':
+  case Ctrl('c'):
+    state->should_exit = true;
+    return;
+  }
+  for (auto &c : state->commands) {
+    if (c.toggle_key && c.toggle_key == key) {
+      c.active = !c.active;
+      return;
+    }
+  }
+}
+
 int main() {
   CursesWrap curses;
+  State state;
   auto [maxy, maxx] = curses.GetBounds();
-  array<string, 4> commands = {"date '+%T'", "date '+%F'", "ip a",
-                               "wpa_cli -i wlp4s0 status"};
-  vector<string> output(commands.size());
+  state.commands.emplace_back("date '+%T%n%F'", Style::CenterEachLine);
+  state.commands.emplace_back("acpi", Style::CenterEachLine);
+  state.commands.emplace_back("ip a", Style::LeftAdjustCenterOfMass, 'i');
+  state.commands.emplace_back("wpa_cli -i wlp4s0 status",
+                              Style::LeftAdjustCenterOfMass, 'w');
 
-  while (1) {
-    transform(commands.begin(), commands.end(), output.begin(),
-              [](const string &x) { return Exec(x.c_str()); });
+  while (!state.should_exit) {
+    vector<string> output;
 
-    int x = 10, y = 5;
-    for (auto &c : output) {
-      y = PrintBuf(y, x, c, Style::CenterEachLine);
+    int x = 30, y = 5;
+    erase();
+    for (auto &c : state.commands) {
+      auto out = c.MaybeExec();
+      if (out) {
+        y = PrintBuf(y, x, *out, c.style) + 1;
+      }
     }
     refresh();
-    sleep(1);
+    int key = GetKeyOrWait();
+    if (key) {
+      ActOnKey(&state, key);
+    }
   }
 }
