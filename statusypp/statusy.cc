@@ -99,12 +99,32 @@ public:
   vector<Command> commands;
 };
 
+size_t LongestLine(string const &str) {
+  size_t res = 0, cur = 0;
+  auto it = str.cbegin(), end = str.cend();
+  while (it != end) {
+    if (*it == '\n') {
+      res = cur > res ? cur : res;
+      cur = 0;
+    } else {
+      ++cur;
+    }
+    ++it;
+  }
+  return res;
+}
+
 // Prints the entire str (which may be multiline), such that each new
 // line still starts on column startx. Returns the number of the next
 // empty line. The meaning of x depends on the style.
 int PrintBuf(int starty, int midx, string const &str, Style stl) {
   auto *start = str.c_str(), *end = str.c_str() + str.size(),
        *line_start = start, *line_end = start;
+
+  size_t longest_line;
+  if (stl == Style::LeftAdjustCenterOfMass) {
+    longest_line = LongestLine(str);
+  }
 
   while (line_start != end) {
     line_end = find(line_start, end, '\n');
@@ -115,7 +135,7 @@ int PrintBuf(int starty, int midx, string const &str, Style stl) {
       startx = midx - (line_end - line_start) / 2;
       break;
     case Style::LeftAdjustCenterOfMass:
-      startx = midx;
+      startx = midx - longest_line / 2;
       break;
     }
     if (startx < 0) {
@@ -184,10 +204,10 @@ int main() {
         num_lines += count(c->cbegin(), c->cend(), '\n') + 2;
       }
     }
-    int y = maxy/2 - num_lines / 2;
+    int y = maxy / 2 - num_lines / 2;
     for (int i = 0; i < state.commands.size(); ++i) {
       if (output[i]) {
-        y = PrintBuf(y, maxx/2, *output[i], state.commands[i].style) + 1;
+        y = PrintBuf(y, maxx / 2, *output[i], state.commands[i].style) + 1;
       }
     }
     refresh();
