@@ -59,6 +59,13 @@ string Exec(char const *cmd) {
   return result;
 }
 
+bool EndsWith(std::string const &str, std::string const &ending) {
+  if (ending.size() > str.size()) {
+    return false;
+  }
+  return equal(ending.rbegin(), ending.rend(), str.rbegin());
+}
+
 class Command {
 public:
   bool active = true;
@@ -69,7 +76,13 @@ public:
     if (!active) {
       return {};
     }
-    return ::Exec(command_string.c_str());
+    auto combined_string = command_string + " 2>&1";
+
+    auto output = Exec(combined_string.c_str());
+    if (EndsWith(output, "command not found\n")) {
+      return {};
+    }
+    return output;
   }
   Command(string command_string_, Style style_, char toggle_key_ = 0)
       : command_string(command_string_), style(style_) {
