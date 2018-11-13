@@ -46,7 +46,7 @@ public:
 enum class Style { CenterEachLine, LeftAdjustCenterOfMass };
 
 // https://stackoverflow.com/a/478960
-string Exec(const char *cmd) {
+string Exec(char const *cmd) {
   array<char, 128> buffer;
   string result;
   shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
@@ -89,7 +89,7 @@ public:
 // Prints the entire str (which may be multiline), such that each new
 // line still starts on column startx. Returns the number of the next
 // empty line. The meaning of x depends on the style.
-int PrintBuf(int starty, int x, const string &str, Style stl) {
+int PrintBuf(int starty, int x, string const &str, Style stl) {
   auto *start = str.c_str(), *end = str.c_str() + str.size(),
        *line_start = start, *line_end = start;
 
