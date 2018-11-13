@@ -1,12 +1,13 @@
-CFLAGS=-O2 -std=gnu11
-LDLIBS=-lncurses
+LIBS = ncurses
+CXX = clang++
+CFLAGS += $(shell pkg-config --cflags $(LIBS))
+CXXFLAGS += -std=c++17
+LDFLAGS += $(shell pkg-config --libs $(LIBS))
 
-
-statusy:
+all: statusy
 
 install: statusy
 	cp statusy /usr/local/bin/statusy
 	chmod a+X /usr/local/bin/statusy
 
-clean:
-	rm statusy
+statusy: statusy.cc
