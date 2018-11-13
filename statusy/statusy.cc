@@ -40,7 +40,7 @@ public:
   pair<int, int> GetBounds() { return {maxx, maxy}; }
 };
 
-enum class Style { CenterEachLine, LeftAdjustCenterOfMass };
+enum class Style { CenterEachLine, LeftAdjust };
 
 // https://stackoverflow.com/a/478960
 string Exec(char const *cmd) {
@@ -119,7 +119,7 @@ int PrintBuf(int starty, int midx, string const &str, Style stl) {
        *line_start = start, *line_end = start;
 
   size_t longest_line;
-  if (stl == Style::LeftAdjustCenterOfMass) {
+  if (stl == Style::LeftAdjust) {
     longest_line = LongestLine(str);
   }
 
@@ -131,7 +131,7 @@ int PrintBuf(int starty, int midx, string const &str, Style stl) {
     case Style::CenterEachLine:
       startx = midx - (line_end - line_start) / 2;
       break;
-    case Style::LeftAdjustCenterOfMass:
+    case Style::LeftAdjust:
       startx = midx - longest_line / 2;
       break;
     }
@@ -177,11 +177,12 @@ void ActOnKey(State *state, int key) {
 int main() {
   CursesWrap curses;
   State state;
+  state.commands.emplace_back("toilet `date '+%T'`", Style::LeftAdjust, 'c');
   state.commands.emplace_back("date '+%T%n%F'", Style::CenterEachLine);
   state.commands.emplace_back("acpi", Style::CenterEachLine);
-  state.commands.emplace_back("ip a", Style::LeftAdjustCenterOfMass, 'i');
+  state.commands.emplace_back("ip a", Style::LeftAdjust, 'i');
   state.commands.emplace_back("wpa_cli -i wlp4s0 status",
-                              Style::LeftAdjustCenterOfMass, 'w');
+                              Style::LeftAdjust, 'w');
 
   while (!state.should_exit) {
     curses.Update();
