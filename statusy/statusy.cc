@@ -165,6 +165,9 @@ void ActOnKey(State *state, int key) {
   case Ctrl('c'):
     state->should_exit = true;
     return;
+  case 'x':
+    clear();
+    return;
   }
   for (auto &c : state->commands) {
     if (c.toggle_key && c.toggle_key == key) {
