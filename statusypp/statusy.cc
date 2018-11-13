@@ -102,7 +102,7 @@ public:
 // Prints the entire str (which may be multiline), such that each new
 // line still starts on column startx. Returns the number of the next
 // empty line. The meaning of x depends on the style.
-int PrintBuf(int starty, int x, string const &str, Style stl) {
+int PrintBuf(int starty, int midx, string const &str, Style stl) {
   auto *start = str.c_str(), *end = str.c_str() + str.size(),
        *line_start = start, *line_end = start;
 
@@ -112,10 +112,10 @@ int PrintBuf(int starty, int x, string const &str, Style stl) {
     int startx;
     switch (stl) {
     case Style::CenterEachLine:
-      startx = x - (line_end - line_start) / 2;
+      startx = midx - (line_end - line_start) / 2;
       break;
     case Style::LeftAdjustCenterOfMass:
-      startx = x;
+      startx = midx;
       break;
     }
     if (startx < 0) {
@@ -160,7 +160,6 @@ void ActOnKey(State *state, int key) {
 int main() {
   CursesWrap curses;
   State state;
-  auto [maxy, maxx] = curses.GetBounds();
   state.commands.emplace_back("date '+%T%n%F'", Style::CenterEachLine);
   state.commands.emplace_back("acpi", Style::CenterEachLine);
   state.commands.emplace_back("ip a", Style::LeftAdjustCenterOfMass, 'i');
@@ -168,14 +167,27 @@ int main() {
                               Style::LeftAdjustCenterOfMass, 'w');
 
   while (!state.should_exit) {
-    vector<string> output;
+    curses.Update();
+    auto [maxx, maxy] = curses.GetBounds();
 
-    int x = 30, y = 5;
+    vector<optional<string>> output;
+
     erase();
     for (auto &c : state.commands) {
       auto out = c.MaybeExec();
-      if (out) {
-        y = PrintBuf(y, x, *out, c.style) + 1;
+      output.push_back(out);
+    }
+
+    size_t num_lines = 0;
+    for (auto const &c : output) {
+      if (c) {
+        num_lines += count(c->cbegin(), c->cend(), '\n') + 2;
+      }
+    }
+    int y = maxy/2 - num_lines / 2;
+    for (int i = 0; i < state.commands.size(); ++i) {
+      if (output[i]) {
+        y = PrintBuf(y, maxx/2, *output[i], state.commands[i].style) + 1;
       }
     }
     refresh();
