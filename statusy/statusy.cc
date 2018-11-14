@@ -30,6 +30,7 @@ public:
     noecho();
     timeout(100);
     Update();
+    clear();
   }
   ~CursesWrap() {
     noraw();
