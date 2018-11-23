@@ -182,7 +182,7 @@ int main() {
   CursesWrap curses;
   State state;
   state.commands.emplace_back("toilet `date '+%T'`", Style::LeftAdjust, 'c');
-  state.commands.emplace_back("date '+%T%n%F'", Style::CenterEachLine);
+  state.commands.emplace_back("date '+%T%n%F%n%A'", Style::CenterEachLine);
   state.commands.emplace_back("acpi", Style::CenterEachLine);
   state.commands.emplace_back("ip a", Style::LeftAdjust, 'i');
   state.commands.emplace_back("wpa_cli -i wlp4s0 status",
